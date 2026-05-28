@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>West Sales Forecast Dashboard · Q2 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #0f0f0f;
+  --bg2: #161616;
+  --bg3: #1e1e1e;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0ede8;
+  --text2: #9a9690;
+  --text3: #5c5955;
+  --green: #2dd87a;
+  --green-dim: rgba(45,216,122,0.12);
+  --amber: #f5a623;
+  --amber-dim: rgba(245,166,35,0.12);
+  --red: #f04d4d;
+  --red-dim: rgba(240,77,77,0.12);
+  --blue: #4d9ef5;
+  --blue-dim: rgba(77,158,245,0.1);
+  --wc: #4d9ef5;
+  --wco: #a78bfa;
+  --tola: #2dd87a;
+  --ca: #f5a623;
+  --closed: #1a5c38;
+  --commit: #2dd87a;
+  --best: #4d9ef5;
+  --upside: #f5a623;
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 14px; }
+body { min-height: 100vh; }
+
+/* Layout */
+.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.sidebar { background: var(--bg2); border-right: 0.5px solid var(--border); padding: 28px 20px; display: flex; flex-direction: column; gap: 8px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.main { padding: 32px 36px; overflow-y: auto; }
+
+/* Sidebar */
+.logo { font-family: var(--font-display); font-size: 18px; color: var(--text); margin-bottom: 24px; line-height: 1.2; }
+.logo span { color: var(--text2); font-style: italic; font-size: 14px; display: block; margin-top: 2px; }
+.nav-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text3); margin: 16px 0 6px; }
+.nav-btn { background: none; border: none; color: var(--text2); font-family: var(--font-body); font-size: 13px; text-align: left; padding: 7px 10px; border-radius: 6px; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 8px; transition: all .15s; }
+.nav-btn:hover { background: var(--bg3); color: var(--text); }
+.nav-btn.active { background: var(--bg3); color: var(--text); }
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.sidebar-footer { margin-top: auto; padding-top: 20px; border-top: 0.5px solid var(--border); font-size: 11px; color: var(--text3); line-height: 1.6; }
+.last-updated { font-family: var(--font-mono); font-size: 10px; color: var(--text3); margin-top: 4px; }
+
+/* Header */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
+.page-title { font-family: var(--font-display); font-size: 28px; line-height: 1.1; color: var(--text); }
+.page-title em { color: var(--text2); font-style: italic; }
+.header-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text3); margin-top: 6px; }
+.refresh-btn { background: var(--bg3); border: 0.5px solid var(--border2); color: var(--text2); font-family: var(--font-body); font-size: 12px; padding: 8px 14px; border-radius: 6px; cursor: pointer; transition: all .15s; display: flex; align-items: center; gap: 6px; }
+.refresh-btn:hover { border-color: var(--green); color: var(--green); }
+
+/* Section */
+.section { margin-bottom: 40px; }
+.section-hdr { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+.section-title { font-family: var(--font-mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text3); }
+.section-rule { flex: 1; height: 0.5px; background: var(--border); }
+
+/* Forecast bar — top summary */
+.forecast-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 40px; }
+.fmet { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+.fmet-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); margin-bottom: 6px; }
+.fmet-val { font-family: var(--font-display); font-size: 30px; color: var(--text); line-height: 1; }
+.fmet-val.g { color: var(--green); }
+.fmet-val.a { color: var(--amber); }
+.fmet-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+.fmet-delta { font-family: var(--font-mono); font-size: 11px; margin-top: 4px; }
+.fmet-delta.pos { color: var(--green); }
+.fmet-delta.neg { color: var(--red); }
+
+/* Team cards grid */
+.team-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 32px; }
+.tcard { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 20px; transition: border-color .2s; }
+.tcard:hover { border-color: var(--border2); }
+.tcard-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.tcard-name { display: flex; align-items: center; gap: 8px; }
+.tdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.tcard-label { font-size: 12px; font-weight: 500; color: var(--text2); }
+.tcard-status { font-family: var(--font-mono); font-size: 10px; padding: 3px 8px; border-radius: 20px; font-weight: 500; }
+.status-on { background: var(--green-dim); color: var(--green); }
+.status-risk { background: var(--red-dim); color: var(--red); }
+.status-watch { background: var(--amber-dim); color: var(--amber); }
+.tcard-total { font-family: var(--font-display); font-size: 32px; color: var(--text); margin-bottom: 2px; line-height: 1; }
+.tcard-quota { font-size: 11px; color: var(--text3); margin-bottom: 14px; font-family: var(--font-mono); }
+.stack-bar { display: flex; height: 5px; border-radius: 3px; overflow: hidden; gap: 1px; margin-bottom: 10px; }
+.stack-seg { height: 100%; transition: width .4s ease; }
+.stack-legend { display: flex; flex-wrap: wrap; gap: 10px; }
+.leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); }
+.leg-sq { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.tcard-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 14px; border-top: 0.5px solid var(--border); }
+.coverage-label { font-family: var(--font-mono); font-size: 10px; color: var(--text3); }
+.gap-val { font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
+.gap-pos { color: var(--green); }
+.gap-neg { color: var(--red); }
+.gap-watch { color: var(--amber); }
+
+/* Chart container */
+.chart-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 0.5px solid var(--border); }
+.chart-leg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text3); }
+.chart-leg-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+/* Risk cards */
+.risk-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.risk-card { background: var(--bg2); border: 0.5px solid var(--border); border-radius: 12px; padding: 20px; }
+.risk-card-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.risk-title { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--text2); }
+.risk-coverage { font-family: var(--font-mono); font-size: 10px; color: var(--text3); }
+.coverage-track { height: 3px; background: var(--border2); border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
+.coverage-fill { height: 100%; border-radius: 2px; transition: width .4s ease; }
+.gap-banner { border-radius: 6px; padding: 8px 12px; font-size: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.gb-green { background: var(--green-dim); color: var(--green); border: 0.5px solid rgba(45,216,122,.25); }
+.gb-amber { background: var(--amber-dim); color: var(--amber); border: 0.5px solid rgba(245,166,35,.25); }
+.gb-red { background: var(--red-dim); color: var(--red); border: 0.5px solid rgba(240,77,77,.25); }
+.risk-list-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text3); margin-bottom: 8px; }
+.risk-item { padding: 7px 0; border-bottom: 0.5px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.risk-item:last-child { border-bottom: none; padding-bottom: 0; }
+.ri-name { font-size: 12px; color: var(--text); line-height: 1.3; }
+.ri-rep { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.ri-right { text-align: right; flex-shrink: 0; }
+.ri-amt { font-family: var(--font-mono); font-size: 12px; color: var(--text); }
+.ri-badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; display: inline-block; margin-top: 3px; font-family: var(--font-mono); }
+.rb-urgent { background: var(--red-dim); color: var(--red); }
+.rb-soon { background: var(--amber-dim); color: var(--amber); }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; margin-bottom: 24px; border-bottom: 0.5px solid var(--border); }
+.tab { background: none; border: none; color: var(--text3); font-family: var(--font-body); font-size: 13px; padding: 8px 14px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -0.5px; transition: all .15s; }
+.tab:hover { color: var(--text2); }
+.tab.active { color: var(--text); border-bottom-color: var(--green); }
+
+/* Pipeline table */
+.pipeline-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pipeline-table th { text-align: left; padding: 8px 10px; font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text3); border-bottom: 0.5px solid var(--border2); cursor: pointer; white-space: nowrap; }
+.pipeline-table th:hover { color: var(--text2); }
+.pipeline-table td { padding: 9px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0; }
+.pipeline-table tr:hover td { background: var(--bg3); }
+.pipeline-table .amt { font-family: var(--font-mono); }
+.pipeline-table .wtd-amt { font-family: var(--font-mono); font-weight: 500; }
+.cat-badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-family: var(--font-mono); }
+.cat-commit { background: rgba(45,216,122,.12); color: var(--green); }
+.cat-best { background: rgba(77,158,245,.12); color: var(--blue); }
+.cat-upside { background: rgba(245,166,35,.12); color: var(--amber); }
+.cat-pipeline { background: rgba(255,255,255,.05); color: var(--text3); }
+.team-pip { display: inline-block; padding: 1px 6px; border-radius: 10px; font-size: 10px; }
+.clari-score { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-family: var(--font-mono); }
+.cs-high { background: rgba(45,216,122,.15); color: var(--green); }
+.cs-mid { background: rgba(245,166,35,.12); color: var(--amber); }
+.cs-low { background: rgba(255,255,255,.05); color: var(--text3); }
+.star { color: var(--amber); font-size: 10px; margin-left: 2px; }
+.pipeline-toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+.pipe-select { background: var(--bg3); border: 0.5px solid var(--border2); color: var(--text2); font-family: var(--font-body); font-size: 12px; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+.pipe-input { background: var(--bg3); border: 0.5px solid var(--border2); color: var(--text); font-family: var(--font-body); font-size: 12px; padding: 6px 10px; border-radius: 6px; width: 160px; outline: none; }
+.pipe-input::placeholder { color: var(--text3); }
+.pipe-input:focus { border-color: var(--green); }
+.table-wrap { overflow-x: auto; border: 0.5px solid var(--border); border-radius: 10px; }
+.tfoot-info { font-family: var(--font-mono); font-size: 11px; color: var(--text3); padding: 8px 10px; }
+
+/* Sections toggle */
+.page-section { display: none; }
+.page-section.active { display: block; }
+
+/* Momentum icons */
+.mom-up { color: var(--green); font-size: 11px; }
+.mom-down { color: var(--red); font-size: 11px; }
+
+/* Tooltip via title — keep native */
+
+.insight-card{background:var(--bg2);border:.5px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px}
+.insight-card-title{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.insight-card-title .ic-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.insight-summary{font-size:13px;color:var(--text);margin-bottom:12px;line-height:1.6}
+.insight-table{width:100%;border-collapse:collapse;font-size:12px}
+.insight-table th{text-align:left;padding:6px 8px;font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);border-bottom:.5px solid var(--border2)}
+.insight-table td{padding:7px 8px;border-bottom:.5px solid var(--border);color:var(--text);vertical-align:middle}
+.insight-table tr:hover td{background:var(--bg3)}
+.insight-table .mono{font-family:var(--font-mono)}
+.risk-urgent{color:var(--red);font-family:var(--font-mono);font-size:10px;padding:2px 6px;background:var(--red-dim);border-radius:10px}
+.risk-soon{color:var(--amber);font-family:var(--font-mono);font-size:10px;padding:2px 6px;background:var(--amber-dim);border-radius:10px}
+.wtd-high{color:var(--green)}.wtd-mid{color:var(--amber)}.wtd-low{color:var(--text2)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.two-col{grid-template-columns:1fr}}
+
+
+.progress-ring-wrap{display:flex;align-items:center;gap:20px;margin-bottom:16px}
+.progress-ring-labels{flex:1}
+.progress-ring-labels .prl-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:2px}
+.progress-ring-labels .prl-total{font-family:var(--font-mono);font-size:20px;font-weight:500;margin-bottom:2px}
+.progress-ring-labels .prl-quota{font-size:11px;color:var(--text3)}
+.progress-ring-labels .prl-gap{font-family:var(--font-mono);font-size:12px;margin-top:4px;font-weight:500}
+.mgr-card{background:var(--bg2);border:.5px solid var(--border);border-radius:12px;padding:18px 20px}
+.mgr-card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.mgr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mgr-title{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3)}
+.mgr-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px}
+.stack-mini{display:flex;height:4px;border-radius:2px;overflow:hidden;gap:1px;margin-top:6px}
+.stack-mini-seg{height:100%}
+.seg-labels{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.seg-lbl{font-size:10px;color:var(--text3);display:flex;align-items:center;gap:3px}
+.seg-sq{width:7px;height:7px;border-radius:1px;flex-shrink:0}
+.new-deal-row{padding:6px 0;border-bottom:.5px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.new-deal-row:last-child{border-bottom:none}
+.nd-name{font-size:12px;color:var(--text);line-height:1.3}
+.nd-meta{font-size:11px;color:var(--text3);margin-top:1px}
+.nd-right{text-align:right;flex-shrink:0}
+.nd-amt{font-family:var(--font-mono);font-size:12px;color:var(--text)}
+.nd-score{font-family:var(--font-mono);font-size:10px;padding:2px 5px;border-radius:8px;margin-top:2px;display:inline-block}
+.cs-hi{background:rgba(45,216,122,.15);color:var(--green)}
+.cs-md{background:rgba(245,166,35,.12);color:var(--amber)}
+
+
+.attain-bar{height:4px;background:var(--border2);border-radius:2px;overflow:hidden;margin-top:4px}
+.attain-fill{height:100%;border-radius:2px;transition:width .4s ease}
+.rank-medal{font-size:14px;display:inline-block;width:20px;text-align:center}
+.attain-pct{font-family:var(--font-mono);font-size:12px;font-weight:500}
+.attain-na{font-family:var(--font-mono);font-size:11px;color:var(--text3)}
+.lb-team-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle;flex-shrink:0}
+
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="logo">
+    <div style="font-family:Arial Black,Arial,sans-serif;font-size:22px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px;line-height:1">
+      <span style="color:#f0ede8">RAPID</span><span style="color:#E45B26">7</span>
+    </div>
+    <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)">West Sales · Forecast</span>
+  </div>
+  <div class="nav-label">Views</div>
+  <button class="nav-btn active" onclick="showSection('overview',this)">
+    <span style="width:6px;height:6px;border-radius:50%;background:#2dd87a;flex-shrink:0"></span>Overview
+  </button>
+  <button class="nav-btn" onclick="showSection('pipeline',this)">
+    <span style="width:6px;height:6px;border-radius:50%;background:#4d9ef5;flex-shrink:0"></span>Pipeline
+  </button>
+  <button class="nav-btn" onclick="showSection('risk',this)">
+    <span style="width:6px;height:6px;border-radius:50%;background:#f04d4d;flex-shrink:0"></span>Risk view
+  </button>
+
+  <button class="nav-btn" onclick="showSection('leaderboard',this)">
+    <span style="width:6px;height:6px;border-radius:50%;background:#E45B26;flex-shrink:0"></span>AE leaderboard
+  </button>
+  <button class="nav-btn" onclick="showSection('bob',this)">
+    <span style="width:6px;height:6px;border-radius:50%;background:#a78bfa;flex-shrink:0"></span>Notes for Bob
+  </button>
+  <button class="nav-btn" onclick="showSection('jacob',this)">
+    <span style="width:6px;height:6px;border-radius:50%;background:#f5a623;flex-shrink:0"></span>Notes for Jacob
+  </button>
+  <div class="nav-label">Teams</div>
+  <button class="nav-btn" onclick="filterTeam('West Central',this)">
+    <span class="nav-dot" style="background:#4d9ef5"></span>West Central
+  </button>
+  <button class="nav-btn" onclick="filterTeam('West Coastal',this)">
+    <span class="nav-dot" style="background:#a78bfa"></span>West Coastal
+  </button>
+  <button class="nav-btn" onclick="filterTeam('TOLA-Mountain',this)">
+    <span class="nav-dot" style="background:#2dd87a"></span>TOLA-Mountain
+  </button>
+  <button class="nav-btn" onclick="filterTeam('Canada',this)">
+    <span class="nav-dot" style="background:#f5a623"></span>Canada
+  </button>
+  <div class="sidebar-footer">
+    Q2 2026 · West Sales<br>
+    In Forecast 90% · Bridge 50%<br>
+    Not in Forecast 30% · ⭐ +10%
+    <div class="last-updated">Updated May 26, 2026</div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="main">
+
+  <div class="page-header">
+    <div style="display:flex;align-items:center;gap:20px">
+      <div style="font-family:Arial Black,Arial,sans-serif;font-size:28px;font-weight:900;letter-spacing:-.5px;line-height:1">
+        <span style="color:#f0ede8">RAPID</span><span style="color:#E45B26">7</span>
+      </div>
+      <div style="width:.5px;height:40px;background:var(--border2)"></div>
+      <div>
+        <div class="page-title">Q2 2026 <em>Forecast</em></div>
+        <div class="header-meta">West Sales · 4 teams · 101 deals · probability-weighted · Updated May 26</div>
+      </div>
+    </div>
+    <button class="refresh-btn" onclick="location.reload()">↺ Refresh</button>
+  </div>
+
+  <!-- OVERVIEW SECTION -->
+  <div id="sec-overview" class="page-section active">
+
+    <!-- Top metrics -->
+    <div class="section">
+      <div class="section-hdr"><div class="section-title">Total forecast</div><div class="section-rule"></div></div>
+      <div class="forecast-summary" id="topMetrics"></div>
+    </div>
+
+    <!-- Team cards -->
+    <div class="section">
+      <div class="section-hdr"><div class="section-title">By team territory</div><div class="section-rule"></div></div>
+      <div class="team-grid" id="teamCards"></div>
+    </div>
+
+    <!-- Chart -->
+    <div class="section">
+      <div class="section-hdr"><div class="section-title">Weighted pipeline vs quota</div><div class="section-rule"></div></div>
+      <div class="chart-card">
+        <div style="position:relative;height:280px"><canvas id="stackChart" role="img" aria-label="Stacked bar chart of closed won, commit, bridge to forecast and upside vs quota per team.">Team forecast vs quota chart.</canvas></div>
+        <div class="chart-legend">
+          <div class="chart-leg-item"><span class="chart-leg-sq" style="background:#1a5c38"></span>Closed won</div>
+          <div class="chart-leg-item"><span class="chart-leg-sq" style="background:#2dd87a"></span>In Forecast (90%)</div>
+          <div class="chart-leg-item"><span class="chart-leg-sq" style="background:#4d9ef5"></span>Bridge to forecast (60–70%)</div>
+          <div class="chart-leg-item"><span class="chart-leg-sq" style="background:#f5a623"></span>Not in Forecast (30%)</div>
+          <div class="chart-leg-item"><span style="display:inline-block;width:18px;border-top:2px dashed #f04d4d"></span>&nbsp;Quota</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manager progress rings -->
+    <div class="section" id="mgrRingsSection">
+      <div class="section-hdr"><div class="section-title">Manager quota progress</div><div class="section-rule"></div></div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:16px">Closed won + probability-weighted open pipeline vs each manager&#8217;s quota. &#11088; star boost applied.</p>
+      <div class="mgr-grid">
+        <div class="mgr-card"><div class="mgr-card-hdr"><span class="mgr-dot" style="background:#4d9ef5"></span><span class="mgr-title">West Central &middot; Nick Rossi</span></div><div id="mgr-wc"></div></div>
+        <div class="mgr-card"><div class="mgr-card-hdr"><span class="mgr-dot" style="background:#a78bfa"></span><span class="mgr-title">West Coastal &middot; Katrina Proule</span></div><div id="mgr-wco"></div></div>
+        <div class="mgr-card"><div class="mgr-card-hdr"><span class="mgr-dot" style="background:#2dd87a"></span><span class="mgr-title">TOLA-Mountain &middot; Cannon Joyce</span></div><div id="mgr-tola"></div></div>
+        <div class="mgr-card"><div class="mgr-card-hdr"><span class="mgr-dot" style="background:#f5a623"></span><span class="mgr-title">Canada &middot; Rich Joyal</span></div><div id="mgr-ca"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PIPELINE SECTION -->
+  <div id="sec-pipeline" class="page-section">
+    <div class="section">
+      <div class="section-hdr"><div class="section-title">All deals</div><div class="section-rule"></div></div>
+      <div class="pipeline-toolbar">
+        <select class="pipe-select" id="pfTeam" onchange="renderPipeline()">
+          <option value="all">All teams</option>
+          <option value="West Central">West Central</option>
+          <option value="West Coastal">West Coastal</option>
+          <option value="TOLA-Mountain">TOLA-Mountain</option>
+          <option value="Canada">Canada</option>
+        </select>
+        <select class="pipe-select" id="pfCat" onchange="renderPipeline()">
+          <option value="all">All categories</option>
+          <option value="Commit">Commit</option>
+          <option value="Bridge to Forecast">Bridge to Forecast</option>
+          <option value="Upside">Upside</option>
+          <option value="Pipeline">Pipeline</option>
+        </select>
+        <select class="pipe-select" id="pfStage" onchange="renderPipeline()">
+          <option value="all">All stages</option>
+          <option value="Negotiation">Negotiation</option>
+          <option value="Validation">Validation</option>
+          <option value="Proposal">Proposal</option>
+          <option value="Positioning">Positioning</option>
+          <option value="Discovery">Discovery</option>
+        </select>
+        <input class="pipe-input" id="pfSearch" placeholder="Search accounts..." oninput="renderPipeline()">
+      </div>
+      <div class="table-wrap">
+        <table class="pipeline-table">
+          <thead><tr>
+            <th style="width:24%" onclick="setSort('account')">Account ↕</th>
+            <th style="width:12%" onclick="setSort('rep')">Rep ↕</th>
+            <th style="width:9%" onclick="setSort('amount')">Raw ARR ↕</th>
+            <th style="width:9%" onclick="setSort('wtd')">Wtd ARR ↕</th>
+            <th style="width:11%">Category</th>
+            <th style="width:9%">Stage</th>
+            <th style="width:7%">Close</th>
+            <th style="width:6%">Clari</th>
+            <th style="width:13%">Team</th>
+          </tr></thead>
+          <tbody id="pipelineBody"></tbody>
+        </table>
+        <div class="tfoot-info" id="pipelineFooter"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RISK SECTION -->
+  <div id="sec-risk" class="page-section">
+    <div class="section">
+      <div class="section-hdr"><div class="section-title">Must-convert deals by team</div><div class="section-rule"></div></div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:20px">Gap calculated after closed won. Ranked by urgency then weighted value. Red = closes this week.</p>
+      <div class="risk-grid" id="riskCards"></div>
+    </div>
+  </div>
+
+
+  <!-- LEADERBOARD SECTION -->
+  <div id="sec-leaderboard" class="page-section">
+    <div class="section">
+      <div class="section-hdr"><div class="section-title">AE Leaderboard · 2026 YTD</div><div class="section-rule"></div></div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:16px">
+        YTD New ARR bookings from Tableau. Quotas shown as placeholders — <strong style="color:var(--text)">send me your AE quota file and I'll update attainment %</strong>.
+        ARR bookings &amp; attainment % from comp plan through 5/27/26. Sorted by YTD ARR bookings.
+      </p>
+
+      <!-- Summary cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px" id="lbSummary"></div>
+
+      <!-- Filters -->
+      <div class="pipeline-toolbar" style="margin-bottom:14px">
+        <select class="pipe-select" id="lbTeam" onchange="renderLeaderboard()">
+          <option value="all">All teams</option>
+          <option value="West Central">West Central</option>
+          <option value="West Coastal">West Coastal</option>
+          <option value="TOLA-Mountain">TOLA-Mountain</option>
+          <option value="Canada">Canada</option>
+        </select>
+        <select class="pipe-select" id="lbSort" onchange="renderLeaderboard()">
+          <option value="ytd">Sort: ARR Bookings</option>
+          <option value="attain">Sort: Attainment %</option>
+          <option value="rep">Sort: Name</option>
+        </select>
+        <input class="pipe-input" id="lbSearch" placeholder="Search rep..." style="width:140px" oninput="renderLeaderboard()">
+      </div>
+
+      <!-- Leaderboard table -->
+      <div class="table-wrap">
+        <table class="pipeline-table" id="lbTable">
+          <thead><tr>
+            <th style="width:5%" onclick="setLbSort('rank')">#</th>
+            <th style="width:24%" onclick="setLbSort('rep')">Rep ↕</th>
+            <th style="width:16%" onclick="setLbSort('team')">Team ↕</th>
+            <th style="width:18%" onclick="setLbSort('ytd')">ARR Bookings YTD ↕</th>
+            <th style="width:14%" onclick="setLbSort('team')">Manager</th>
+            <th style="width:23%" onclick="setLbSort('attain')">Attainment % ↕</th>
+          </tr></thead>
+          <tbody id="lbBody"></tbody>
+        </table>
+        <div class="tfoot-info" id="lbFoot"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- BOB SECTION -->
+  <div id="sec-bob" class="page-section">
+    <div class="section">
+      <div class="section-hdr"><div class="section-title">Notes for Bob</div><div class="section-rule"></div></div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:20px">Your quota: <strong style="color:var(--text)">$4.6M</strong> &nbsp;·&nbsp; Current weighted forecast (all teams): <strong style="color:var(--green)">$4.87M</strong> &nbsp;·&nbsp; Gap: <strong style="color:var(--green)">+$1.17M cushion</strong> &nbsp;·&nbsp; Closed won to date: <strong style="color:var(--text)">$1.07M</strong></p>
+      <div id="bobContent"></div>
+      <div class="insight-card" style="margin-top:20px">
+        <div class="insight-card-title"><span class="ic-dot" style="background:#a78bfa"></span>New deals now tracking to close this quarter</div>
+        <div id="bobNewDeals"><div style="font-size:12px;color:var(--text3);padding:12px 0">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JACOB SECTION -->
+  <div id="sec-jacob" class="page-section">
+    <div class="section">
+      <div class="section-hdr"><div class="section-title">Notes for Jacob</div><div class="section-rule"></div></div>
+      <p style="font-size:12px;color:var(--text3);margin-bottom:20px">Starred Bridge to Forecast deals · Q3 pull-forward candidates · Pipeline risks closing within 14 days</p>
+      <div id="jacobContent"></div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+const STARRED=new Set(["Memorial Hospital at Gulfport","Sage Hospitality","Andersen Tax LLC","Natural Grocers by Vitamin Cottage","Accuray Incorporated","Sun Health Corporation","EyeCare Partners LLC","Autodesk, Inc.","Energizer Holdings, Inc.","Super Micro Computer, Inc.","Church Mutual Insurance Company","DCH Health System","NORC at the University of Chicago","Data Recognition - FedRAMP","Ventura Foods, LLC","Upbound Group","Bunzl USA, Inc","Arrive Logistics","Skidmore, Owings & Merrill LLP","H&T Group PLC","Carr, Riggs, & Ingram","ConvergeOne","Palo Alto Networks","Flowserve Corporation","American Hospital Association","Virgin Galactic Holdings Inc"]);
+const RVP_W={"In Forecast":0.90,"Bridge to Forecast":0.50,"Not in Forecast":0.30};
+const CLOSED_WON={"West Central":440073,"West Coastal":345811,"TOLA-Mountain":162663,"Canada":120000};
+const QUOTA={"West Central":1194952,"West Coastal":1194952,"TOLA-Mountain":1365554,"Canada":1007317};
+const TEAM_COLORS={"West Central":"#4d9ef5","West Coastal":"#a78bfa","TOLA-Mountain":"#2dd87a","Canada":"#f5a623"};
+const TEAMS=["West Central","West Coastal","TOLA-Mountain","Canada"];
+const TODAY=new Date("2026-05-25");
+
+const fmt=n=>"$"+Math.round(n||0).toLocaleString();
+const fmtK=n=>{const v=Math.round(n||0);if(v>=1000000)return "$"+(v/1e6).toFixed(2)+"M";if(v>=1000)return "$"+(v/1000).toFixed(0)+"K";return "$"+v;};
+const effW=d=>Math.min((RVP_W[d.rvp]||0)+(d.starred?0.10:0),1.0);
+const wt=d=>Math.round(d.amount*effW(d));
+const clariColor=s=>{const n=parseFloat(s);return n>=70?"cs-high":n>=40?"cs-mid":"cs-low";};
+
+const ALL_DEALS=[{"id": 1, "opp": "RFP | MTC + VC | 3000 assets | EncoreCyber", "account": "Johnsonville Sausage, LLC", "rep": "Brendan Sullivan", "team": "West Central", "amount": 330166, "rvp": "Bridge to Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "", "nextSteps": "5/21 down slecting 2 vendors on 5/22, looking for MDR/VM/VC", "clariScore": "38.0", "meddpicc": "9.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 2, "opp": "WI | MTC ult | 5,000 assets | Alchmey | AW (head to head)", "account": "Fairway Independent Mortgage Corporation", "rep": "Brendan Sullivan", "team": "West Central", "amount": 300000, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-26", "competitor": "", "nextSteps": "5/21 presentations complete, Quote review 5/27", "clariScore": "34.0", "meddpicc": "9.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 3, "opp": "MS | Memorial Hospital at Gulfport | MTC", "account": "Memorial Hospital at Gulfport", "rep": "Daniel Lantrip", "team": "TOLA-Mountain", "amount": 250000, "rvp": "Bridge to Forecast", "stage": "Negotiation", "close": "2026-06-30", "competitor": "", "nextSteps": "05/26 - next sync = 05/28", "clariScore": "77.0", "meddpicc": "8.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 4, "opp": "NN | CO | SRK Consulting | MTC | $150k", "account": "SRK Consulting", "rep": "Hayden Denton", "team": "TOLA-Mountain", "amount": 205224, "rvp": "Not in Forecast", "stage": "Proposal", "close": "2026-06-30", "competitor": "", "nextSteps": "HD 4/29 Made great progress, budget meeting 5/19", "clariScore": "30.0", "meddpicc": "6.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 5, "opp": "Exposure Command | 17,500 assets | Land | PowerSchool", "account": "PowerSchool", "rep": "Jeremy Castiglia", "team": "West Coastal", "amount": 200000, "rvp": "Bridge to Forecast", "stage": "Validation", "close": "2026-06-30", "competitor": "", "nextSteps": "5/22 - project on hold due to new CISO hire, getting up to speed", "clariScore": "64.0", "meddpicc": "11.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 6, "opp": "NN | CO | Sage Hospitality | MTC Adv | Optiv | $166k", "account": "Sage Hospitality", "rep": "Hayden Denton", "team": "TOLA-Mountain", "amount": 166248, "rvp": "Bridge to Forecast", "stage": "Validation", "close": "2026-06-30", "competitor": "Arctic Wolf", "nextSteps": "HD 5/7 POC Check-in call 2 at 1:30pm Mountain today.", "clariScore": "56.0", "meddpicc": "13.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 7, "opp": "TX | NRG | MTC ULT Upgrade", "account": "NRG Energy, Inc", "rep": "Danny McInnis", "team": "TOLA-Mountain", "amount": 156000, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "", "nextSteps": "5/22 - ASM enablement kickoff on 5/27", "clariScore": "29.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 8, "opp": "CA | ECU Asset Expansion | 1k | EX | Optiv", "account": "Acacia Communications", "rep": "Jared Vargus", "team": "West Coastal", "amount": 150000, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-24", "competitor": "", "nextSteps": "5/21 Tony received quote, bringing to boss for procurement", "clariScore": "34.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 9, "opp": "UT | C.R. England | MDRP | VLCM", "account": "C.R. England, Inc.", "rep": "Melissa Jolley", "team": "TOLA-Mountain", "amount": 150000, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-24", "competitor": "", "nextSteps": "5/11/2026-Demo on 5/19", "clariScore": "34.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 10, "opp": "TX | Loomis US MTC 7900 assets | CDW | Cosell", "account": "Loomis US", "rep": "Cannon Joyce", "team": "TOLA-Mountain", "amount": 150000, "rvp": "Bridge to Forecast", "stage": "Proposal", "close": "2026-06-26", "competitor": "", "nextSteps": "5/19 - Generating quote for procurement", "clariScore": "34.0", "meddpicc": "8.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 11, "opp": "MTC Ultimate | 3,500 assets | Land | eSentire", "account": "Andersen Tax LLC", "rep": "Jeremy Castiglia", "team": "West Coastal", "amount": 143859, "rvp": "Bridge to Forecast", "stage": "Negotiation", "close": "2026-06-19", "competitor": "", "nextSteps": "5/22 - CISO making final decision on 1k vs 3.5k assets. Working on legal", "clariScore": "77.0", "meddpicc": "13.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 12, "opp": "NN | CO | Natural Grocers | MTC Adv 4k | Ahead", "account": "Natural Grocers by Vitamin Cottage", "rep": "Hayden Denton", "team": "TOLA-Mountain", "amount": 139523, "rvp": "Bridge to Forecast", "stage": "Validation", "close": "2026-06-30", "competitor": "Splunk", "nextSteps": "HD 4/29 Demo May 7th. Once technical buy in achieved, POC begins.", "clariScore": "63.0", "meddpicc": "10.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 13, "opp": "WI | Accuray Incorporated | MDR | SHI", "account": "Accuray Incorporated", "rep": "Tyler Calderone", "team": "West Central", "amount": 136568, "rvp": "Not in Forecast", "stage": "Validation", "close": "2026-06-24", "competitor": "Arctic Wolf", "nextSteps": "5/20 - Vendor decision by end of month.", "clariScore": "46.0", "meddpicc": "7.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 14, "opp": "TX | KCC | MTC x Ankura | Q2 26", "account": "Kubota Credit Corporation", "rep": "Danny McInnis", "team": "TOLA-Mountain", "amount": 126927, "rvp": "Bridge to Forecast", "stage": "Negotiation", "close": "2026-05-29", "competitor": "Wiz", "nextSteps": "5/22 - final check-in call on 5/26", "clariScore": "77.0", "meddpicc": "14.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 15, "opp": "Vector Command | 512 | Expand", "account": "AIDS Healthcare Foundation, Inc", "rep": "Jared Vargus", "team": "West Coastal", "amount": 126000, "rvp": "Not in Forecast", "stage": "Negotiation", "close": "2026-06-24", "competitor": "Other", "nextSteps": "05/21 CIO no-showed best practices session.", "clariScore": "73.0", "meddpicc": "16.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 16, "opp": "CC | Wolters Kluwer | Surface Command | Dire", "account": "Wolters Kluwer United States Inc.", "rep": "Nick Rossi", "team": "West Central", "amount": 120000, "rvp": "Bridge to Forecast", "stage": "Validation", "close": "2026-06-23", "competitor": "Tenable", "nextSteps": "Director presentation set, aligning on go forward strategy", "clariScore": "46.0", "meddpicc": "11.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 17, "opp": "AZ | Sun Health | MTC | 800 | COEUS", "account": "Sun Health Corporation", "rep": "Madison Murdick", "team": "West Coastal", "amount": 119000, "rvp": "In Forecast", "stage": "Negotiation", "close": "2026-05-29", "competitor": "", "nextSteps": "5/15 - Confirmed moving forward. Waiting on MSA legal review.", "clariScore": "86.0", "meddpicc": "", "starred": 1, "momentum": "flat", "log": []}, {"id": 18, "opp": "MO | Exposure Command Advanced | GPS", "account": "EyeCare Partners LLC", "rep": "Heather Ellis", "team": "TOLA-Mountain", "amount": 118651, "rvp": "In Forecast", "stage": "Proposal", "close": "2026-05-29", "competitor": "", "nextSteps": "5/26 - Partner said PO is in process, expecting today or tomorrow.", "clariScore": "67.0", "meddpicc": "", "starred": 1, "momentum": "flat", "log": []}, {"id": 19, "opp": "Renewal EyeCare Partners 2026-06-02", "account": "EyeCare Partners LLC", "rep": "Heather Ellis", "team": "TOLA-Mountain", "amount": 104828, "rvp": "Not in Forecast", "stage": "Negotiation", "close": "2026-06-02", "competitor": "", "nextSteps": "5/8 Renewal confirmed, working on 3yr term", "clariScore": "82.0", "meddpicc": "", "starred": 1, "momentum": "flat", "log": []}, {"id": 20, "opp": "NN | Energizer Holdings | ECE | Qualys Replacement", "account": "Energizer Holdings, Inc.", "rep": "Micah Cogan", "team": "West Central", "amount": 104800, "rvp": "Bridge to Forecast", "stage": "Negotiation", "close": "2026-06-12", "competitor": "", "nextSteps": "5.7 call with Michael for quick touch base", "clariScore": "76.0", "meddpicc": "6.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 21, "opp": "CA l Seismic l 800 asset upsell + MXDR l SHI", "account": "Seismic", "rep": "Madison Murdick", "team": "West Coastal", "amount": 102015, "rvp": "Bridge to Forecast", "stage": "Positioning", "close": "2026-06-25", "competitor": "", "nextSteps": "4.24 - no movement until merger finalized", "clariScore": "44.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 22, "opp": "WI | Brady Corp. | IDR | logrhythm", "account": "Brady Corporation", "rep": "Brendan Sullivan", "team": "West Central", "amount": 100000, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "", "nextSteps": "5/7 Had Scott send email to VP", "clariScore": "24.0", "meddpicc": "7.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 23, "opp": "CA | Vector Command | Small | Expand | GPS", "account": "Super Micro Computer, Inc.", "rep": "Jared Vargus", "team": "West Coastal", "amount": 100000, "rvp": "Bridge to Forecast", "stage": "Positioning", "close": "2026-06-17", "competitor": "", "nextSteps": "5/21 Alfredo in Thailand, decision deferred to June", "clariScore": "34.0", "meddpicc": "13.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 24, "opp": "AZ l Mister Car Wash l MDRP l 4,400 assets l SHI", "account": "Mister Car Wash, Inc.", "rep": "Madison Murdick", "team": "West Coastal", "amount": 99705, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-24", "competitor": "", "nextSteps": "", "clariScore": "43.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 25, "opp": "CA | Sperber Companies | MTC | Nth", "account": "Sperber Landscape Companies", "rep": "Spencer Canny", "team": "West Coastal", "amount": 89019, "rvp": "Bridge to Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "Arctic Wolf", "nextSteps": "5/21 awaiting feedback, partner meeting with CIO Friday", "clariScore": "53.0", "meddpicc": "12.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 26, "opp": "AZ | Mister Car Wash | MDRP | SHI", "account": "Mister Car Wash, Inc.", "rep": "Madison Murdick", "team": "West Coastal", "amount": 85000, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-19", "competitor": "", "nextSteps": "4.24 demo scheduled", "clariScore": "29.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 27, "opp": "Renewal Associated Food Stores 2026-06-25", "account": "Associated Food Stores, Inc.", "rep": "Matthew Smyth", "team": "West Central", "amount": 83549, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-25", "competitor": "", "nextSteps": "", "clariScore": "49.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 28, "opp": "WI | Church Mutual VM tenable RIp | SHI", "account": "Church Mutual Insurance Company", "rep": "Tyler Calderone", "team": "West Central", "amount": 81463, "rvp": "In Forecast", "stage": "Negotiation", "close": "2026-06-24", "competitor": "Tenable", "nextSteps": "5/26 - Agreements good, SHI updating quote terms, working on order timing.", "clariScore": "88.0", "meddpicc": "", "starred": 1, "momentum": "flat", "log": []}, {"id": 29, "opp": "WI | Direct Supply | Vector Command Adv | SHI", "account": "Direct Supply, Inc.", "rep": "Tyler Calderone", "team": "West Central", "amount": 80640, "rvp": "Bridge to Forecast", "stage": "Validation", "close": "2026-06-24", "competitor": "", "nextSteps": "5/20 - Between us and 1 other, syncing 5/27", "clariScore": "74.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 30, "opp": "WA | Milliman | VCA | SprocketSecurity", "account": "Milliman, Inc.", "rep": "Tristan Shepard", "team": "West Coastal", "amount": 80000, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-19", "competitor": "", "nextSteps": "6/9 VC walkthrough and Demo", "clariScore": "49.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 31, "opp": "TX | Noble Corp | VCA x 256 | $76k", "account": "Noble Corporation", "rep": "Danny McInnis", "team": "TOLA-Mountain", "amount": 76400, "rvp": "Not in Forecast", "stage": "Validation", "close": "2026-06-26", "competitor": "Unknown", "nextSteps": "5/22 - CISO has competing priorities", "clariScore": "63.0", "meddpicc": "9.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 32, "opp": "AL l DCH l IVM x5120 or x10240 l ICM", "account": "DCH Health System", "rep": "Daniel Lantrip", "team": "TOLA-Mountain", "amount": 75277, "rvp": "Bridge to Forecast", "stage": "Negotiation", "close": "2026-06-30", "competitor": "Tenable", "nextSteps": "05/26 - Quick Sync DCH Tue May 26 1-1:15pm", "clariScore": "78.0", "meddpicc": "16.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 33, "opp": "WI | 2,000 assets | MVM | Direct", "account": "Ashley Furniture Industries, Inc.", "rep": "Brendan Sullivan", "team": "West Central", "amount": 75000, "rvp": "Bridge to Forecast", "stage": "Positioning", "close": "2026-05-30", "competitor": "", "nextSteps": "5/21 VP intrigued, waiting on next steps", "clariScore": "34.0", "meddpicc": "10.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 34, "opp": "CC | IL | James Hardie | GPS DR", "account": "James Hardie USA", "rep": "Vanessa Ortega", "team": "West Central", "amount": 75000, "rvp": "Not in Forecast", "stage": "Discovery", "close": "2026-06-26", "competitor": "", "nextSteps": "", "clariScore": "20.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 35, "opp": "AZ | MTC Ultimate Upgrade | 12.5k Assets", "account": "Benchmark Electronics, Inc.", "rep": "Jared Vargus", "team": "West Coastal", "amount": 75000, "rvp": "Not in Forecast", "stage": "Proposal", "close": "2026-06-25", "competitor": "", "nextSteps": "5/21 Customer concerned about handling all alerts", "clariScore": "33.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 36, "opp": "EX | CO | Snell and Wilmer | Vector Command", "account": "Snell & Wilmer", "rep": "Hayden Denton", "team": "TOLA-Mountain", "amount": 72294, "rvp": "In Forecast", "stage": "Negotiation", "close": "2026-05-29", "competitor": "", "nextSteps": "HD 5/21 Final quote review with Allison", "clariScore": "78.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 37, "opp": "CA | InsightCloudSec | McAfee | Wiz", "account": "McAfee, Inc.", "rep": "Jared Vargus", "team": "West Coastal", "amount": 70000, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-26", "competitor": "Wiz", "nextSteps": "5/21 questionnaire sent, call pushed to 5/27", "clariScore": "29.0", "meddpicc": "9.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 38, "opp": "WM|TAM|Guidepoint", "account": "Waste Management Inc.", "rep": "David Sanchez", "team": "TOLA-Mountain", "amount": 70000, "rvp": "Not in Forecast", "stage": "Validation", "close": "2026-06-22", "competitor": "", "nextSteps": "5/15 TAM resource being established", "clariScore": "60.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 39, "opp": "CA | PMAT | VCA", "account": "Pacific Maritime Association Inc", "rep": "Tristan Shepard", "team": "West Coastal", "amount": 69000, "rvp": "Not in Forecast", "stage": "Validation", "close": "2026-06-26", "competitor": "", "nextSteps": "5/27 Network pen test re-group", "clariScore": "68.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 40, "opp": "MN | DRC | FEDRAMP VM Tenable rip", "account": "Data Recognition - FedRAMP", "rep": "Tyler Calderone", "team": "West Central", "amount": 67610, "rvp": "In Forecast", "stage": "Validation", "close": "2026-06-25", "competitor": "Tenable", "nextSteps": "5/20 - NDA done, POC discussion 5/28.", "clariScore": "69.0", "meddpicc": "12.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 41, "opp": "CA | NN | Vector Command Advanced | GPS", "account": "Cohu, Inc.", "rep": "Spencer Canny", "team": "West Coastal", "amount": 65849, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "", "nextSteps": "5/21 CIO wants to circle at board in a few weeks", "clariScore": "49.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 42, "opp": "CA | CC | MDRP | CDW", "account": "Ventura Foods, LLC", "rep": "Spencer Canny", "team": "West Coastal", "amount": 62000, "rvp": "Bridge to Forecast", "stage": "Proposal", "close": "2026-06-30", "competitor": "", "nextSteps": "5/21 call declined, CIO/CEO budget discussion", "clariScore": "49.0", "meddpicc": "11.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 43, "opp": "Amendment for contract - Upbound Group", "account": "Upbound Group", "rep": "Heather Ellis", "team": "TOLA-Mountain", "amount": 60689, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-19", "competitor": "", "nextSteps": "4/10 tracking opp", "clariScore": "34.0", "meddpicc": "", "starred": 1, "momentum": "flat", "log": []}, {"id": 44, "opp": "Renewal Vizient VHA Inc 2026-06-18", "account": "Vizient (VHA Inc.)", "rep": "Mary DuMont", "team": "West Central", "amount": 58222, "rvp": "Not in Forecast", "stage": "Validation", "close": "2026-06-18", "competitor": "", "nextSteps": "", "clariScore": "78.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 45, "opp": "CA | ECE | 5k Assets | iMerit", "account": "iMerit Technology", "rep": "Jared Vargus", "team": "West Coastal", "amount": 57183, "rvp": "Not in Forecast", "stage": "Proposal", "close": "2026-06-30", "competitor": "Tenable", "nextSteps": "5/21 contact on vacation, follow up 5/26", "clariScore": "31.0", "meddpicc": "10.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 46, "opp": "TX|Centerpoint Energy|TAM/Prem Support", "account": "Centerpoint Energy", "rep": "David Sanchez", "team": "TOLA-Mountain", "amount": 57000, "rvp": "Not in Forecast", "stage": "Proposal", "close": "2026-06-19", "competitor": "", "nextSteps": "5/15 Customer not open to TAM yet", "clariScore": "30.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 47, "opp": "CC | Bunzl | IAS 2nd rollout | Guidepoint", "account": "Bunzl USA, Inc", "rep": "Brian Connel", "team": "West Central", "amount": 53940, "rvp": "Bridge to Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "", "nextSteps": "4/10 still working on Onboarding BUKI", "clariScore": "31.0", "meddpicc": "14.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 48, "opp": "Freedom Financial Amendment | IVM Expand", "account": "Freedom Financial Network, LLC DBA Achieve", "rep": "Madison Murdick", "team": "West Coastal", "amount": 52061, "rvp": "Not in Forecast", "stage": "Proposal", "close": "2026-06-19", "competitor": "", "nextSteps": "5/15 - Sent note to Joel, rescheduling Automox demo.", "clariScore": "32.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 49, "opp": "TX | Arrive Logistics | MTC Upgrade | $51k", "account": "Arrive Logistics", "rep": "Danny McInnis", "team": "TOLA-Mountain", "amount": 51000, "rvp": "In Forecast", "stage": "Negotiation", "close": "2026-06-26", "competitor": "Sentinel", "nextSteps": "5/22 - VP verbal sign off, final quote to procurement", "clariScore": "89.0", "meddpicc": "7.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 50, "opp": "UT | Intermountain Health | SC", "account": "INTERMOUNTAIN HEALTH CARE", "rep": "Melissa Jolley", "team": "TOLA-Mountain", "amount": 50000, "rvp": "Not in Forecast", "stage": "Discovery", "close": "2026-06-19", "competitor": "", "nextSteps": "5/18 New person started, scheduling demo", "clariScore": "28.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 51, "opp": "CC| IL | Skidmore | MDRP | Insight", "account": "Skidmore, Owings & Merrill LLP", "rep": "Vanessa Ortega", "team": "West Central", "amount": 50000, "rvp": "In Forecast", "stage": "Negotiation", "close": "2026-06-19", "competitor": "", "nextSteps": "5/13 CIO final approval, sign off 5/19", "clariScore": "81.0", "meddpicc": "9.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 52, "opp": "CC | Bunzl | ICS UKI | Guidepoint", "account": "Bunzl USA, Inc", "rep": "Brian Connel", "team": "West Central", "amount": 50000, "rvp": "In Forecast", "stage": "Positioning", "close": "2026-06-26", "competitor": "", "nextSteps": "4/7 DPA questions for European team", "clariScore": "61.0", "meddpicc": "", "starred": 1, "momentum": "flat", "log": []}, {"id": 53, "opp": "CC | Bunzl | ICS BCE | GuidePoint", "account": "Bunzl USA, Inc", "rep": "Brian Connel", "team": "West Central", "amount": 49896, "rvp": "In Forecast", "stage": "Positioning", "close": "2026-06-26", "competitor": "", "nextSteps": "4/7 DPA questions for European team", "clariScore": "66.0", "meddpicc": "", "starred": 1, "momentum": "flat", "log": []}, {"id": 54, "opp": "WI | StatRad | MTC ult | Birdrock", "account": "StatRad", "rep": "Brendan Sullivan", "team": "West Central", "amount": 49062, "rvp": "Bridge to Forecast", "stage": "Positioning", "close": "2026-06-26", "competitor": "", "nextSteps": "5/21 R7 golfing with VP, check in Wednesday", "clariScore": "32.0", "meddpicc": "9.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 55, "opp": "MTC | TX | First Cash Acquisition | H&T Group", "account": "H&T Group PLC", "rep": "Brett Wooten", "team": "TOLA-Mountain", "amount": 45989, "rvp": "Bridge to Forecast", "stage": "Proposal", "close": "2026-06-26", "competitor": "", "nextSteps": "5/18 Partner moving forward with customer", "clariScore": "44.0", "meddpicc": "", "starred": 1, "momentum": "flat", "log": []}, {"id": 56, "opp": "AL | CRI Group | Exposure Command | Guidepoint", "account": "Carr, Riggs, & Ingram", "rep": "Daniel Lantrip", "team": "TOLA-Mountain", "amount": 43222, "rvp": "Bridge to Forecast", "stage": "Negotiation", "close": "2026-06-30", "competitor": "", "nextSteps": "05/26 - 2 Jun 2026, Tue 1-1:05pm Quick Sync", "clariScore": "76.0", "meddpicc": "16.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 57, "opp": "Jacobs - FedRamp", "account": "Jacobs Engineering Group Inc - FedRAMP", "rep": "Brett Wooten", "team": "TOLA-Mountain", "amount": 40864, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "", "nextSteps": "5/18 Call scheduled 5/19", "clariScore": "48.0", "meddpicc": "7.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 58, "opp": "UnitedLex | CloudSec | Tracking Opp", "account": "UnitedLex Corporation", "rep": "Micah Cogan", "team": "West Central", "amount": 40000, "rvp": "Bridge to Forecast", "stage": "Discovery", "close": "2026-06-26", "competitor": "", "nextSteps": "5/6 pushing for cloud numbers", "clariScore": "26.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 59, "opp": "MN | ConvergeOne | EC Expansion 3000", "account": "ConvergeOne", "rep": "Tyler Calderone", "team": "West Central", "amount": 36197, "rvp": "Bridge to Forecast", "stage": "Validation", "close": "2026-06-17", "competitor": "", "nextSteps": "5/13 still determining rightsize", "clariScore": "68.0", "meddpicc": "", "starred": 1, "momentum": "flat", "log": []}, {"id": 60, "opp": "Freedom Financial | MDR Additional assets", "account": "Freedom Financial Network, LLC DBA Achieve", "rep": "Madison Murdick", "team": "West Coastal", "amount": 34448, "rvp": "Not in Forecast", "stage": "Discovery", "close": "2026-06-08", "competitor": "", "nextSteps": "", "clariScore": "38.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 61, "opp": "IA | ACT - Exposure Command Upgrade", "account": "ACT Education Corp.", "rep": "Kaitlyn Cargill", "team": "West Central", "amount": 32282, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "", "nextSteps": "5/21 POC ending May, decision by Robert", "clariScore": "24.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 62, "opp": "UT | Boart Longyear | ECE 2400 | VLCM", "account": "Boart Longyear International", "rep": "Melissa Jolley", "team": "TOLA-Mountain", "amount": 31808, "rvp": "Not in Forecast", "stage": "Validation", "close": "2026-06-30", "competitor": "", "nextSteps": "5/12 Pricing good, awaiting CTO approval", "clariScore": "64.0", "meddpicc": "11.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 63, "opp": "CA | ECE | 2500 Assets | 10x Genomics", "account": "10x Genomics", "rep": "Jared Vargus", "team": "West Coastal", "amount": 27375, "rvp": "Bridge to Forecast", "stage": "Positioning", "close": "2026-06-17", "competitor": "Axonius", "nextSteps": "05/21 POV kicked off", "clariScore": "30.0", "meddpicc": "8.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 64, "opp": "ECE Upgrade | ECE 1850 Assets | Palo Alto Networks", "account": "Palo Alto Networks", "rep": "Jeremy Castiglia", "team": "West Coastal", "amount": 25403, "rvp": "In Forecast", "stage": "Negotiation", "close": "2026-05-29", "competitor": "", "nextSteps": "5/21 - Partner has PO", "clariScore": "91.0", "meddpicc": "", "starred": 1, "momentum": "flat", "log": []}, {"id": 65, "opp": "TX | Southwest Airlines | Exposure Command", "account": "Southwest Airlines Co.", "rep": "Brett Wooten", "team": "TOLA-Mountain", "amount": 25000, "rvp": "Not in Forecast", "stage": "Discovery", "close": "2026-06-30", "competitor": "", "nextSteps": "5/18 Tech call scheduled 5/20", "clariScore": "26.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 66, "opp": "IMEG | Surface Command 5500 | Burwood", "account": "IMEG Corp", "rep": "Kaitlyn Cargill", "team": "West Central", "amount": 25000, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-29", "competitor": "Microsoft", "nextSteps": "5/21 Julia socializing renewal with CIO", "clariScore": "34.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 67, "opp": "Threat Command | Living Spaces | CDW", "account": "Living Spaces", "rep": "Jeremy Castiglia", "team": "West Coastal", "amount": 24990, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "", "nextSteps": "5/22 CISO making final decision", "clariScore": "61.0", "meddpicc": "12.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 68, "opp": "TX | Flowserve | Asset Upsell x 1100 | Q2 26", "account": "Flowserve Corporation", "rep": "Danny McInnis", "team": "TOLA-Mountain", "amount": 24207, "rvp": "Bridge to Forecast", "stage": "Validation", "close": "2026-06-15", "competitor": "", "nextSteps": "5/4 aligned assets to June 15th", "clariScore": "63.0", "meddpicc": "", "starred": 1, "momentum": "flat", "log": []}, {"id": 69, "opp": "MSSP | HPE Greenlake PCE | ECU 1500 Assets", "account": "HPE Managed Services", "rep": "Bryan Wilson", "team": "TOLA-Mountain", "amount": 23488, "rvp": "Not in Forecast", "stage": "Proposal", "close": "2026-05-31", "competitor": "", "nextSteps": "", "clariScore": "49.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 70, "opp": "MidFirst / ECA Upsell", "account": "MidFirst Bank", "rep": "Brett Wooten", "team": "TOLA-Mountain", "amount": 16000, "rvp": "Bridge to Forecast", "stage": "Negotiation", "close": "2026-06-25", "competitor": "", "nextSteps": "5/18 Next call 5/21", "clariScore": "76.0", "meddpicc": "15.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 71, "opp": "CA | CC | MDR 500 Assets | SHI | Hot Topic", "account": "Hot Topic Inc.", "rep": "Spencer Canny", "team": "West Coastal", "amount": 15000, "rvp": "Not in Forecast", "stage": "Proposal", "close": "2026-06-26", "competitor": "", "nextSteps": "5/21 going for approvals on additional assets", "clariScore": "38.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 72, "opp": "CA | Pacific Life | ECE 1000 | SHI", "account": "Pacific Mutual Holding Company (Pacific Life)", "rep": "Tristan Shepard", "team": "West Coastal", "amount": 14378, "rvp": "Not in Forecast", "stage": "Validation", "close": "2026-06-30", "competitor": "Tenable", "nextSteps": "5/26 POC Kickoff", "clariScore": "61.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 73, "opp": "Renewal Chedraui USA 2026-05-29", "account": "Chedraui USA", "rep": "Andrew Cibotti", "team": "West Central", "amount": 13357, "rvp": "Not in Forecast", "stage": "Negotiation", "close": "2026-05-29", "competitor": "", "nextSteps": "", "clariScore": "91.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 74, "opp": "CC | IL | AHA | SC + PT add on | SHI", "account": "American Hospital Association", "rep": "Vanessa Ortega", "team": "West Central", "amount": 13000, "rvp": "Bridge to Forecast", "stage": "Validation", "close": "2026-06-26", "competitor": "", "nextSteps": "5/13 updated quote, tie off 5/21", "clariScore": "61.0", "meddpicc": "8.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 75, "opp": "Renewal iRhythm Technologies 2026-06-05", "account": "iRhythm Technologies Inc", "rep": "Matthew Smyth", "team": "West Central", "amount": 10462, "rvp": "Not in Forecast", "stage": "Validation", "close": "2026-06-05", "competitor": "", "nextSteps": "", "clariScore": "83.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 76, "opp": "NM | Virgin Galactic | Surface Command | SHI", "account": "Virgin Galactic Holdings Inc", "rep": "Melissa Jolley", "team": "TOLA-Mountain", "amount": 10000, "rvp": "Not in Forecast", "stage": "Discovery", "close": "2026-06-25", "competitor": "", "nextSteps": "5/18 SC and training sent", "clariScore": "26.0", "meddpicc": "", "starred": 1, "momentum": "flat", "log": []}, {"id": 77, "opp": "FirstCash & AFF ECE Upgrade + UK Office", "account": "First Cash", "rep": "Brett Wooten", "team": "TOLA-Mountain", "amount": 10000, "rvp": "Not in Forecast", "stage": "Discovery", "close": "2026-06-30", "competitor": "", "nextSteps": "5/18 Partner moving forward", "clariScore": "39.0", "meddpicc": "10.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 78, "opp": "Hosted Velociraptor | Living Spaces | CDW", "account": "Living Spaces", "rep": "Jeremy Castiglia", "team": "West Coastal", "amount": 4014, "rvp": "Not in Forecast", "stage": "Negotiation", "close": "2026-06-30", "competitor": "", "nextSteps": "5/22 CISO making final decision", "clariScore": "74.0", "meddpicc": "12.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 79, "opp": "Renewal Trustmark National Bank 2026-06-28", "account": "Trustmark National Bank", "rep": "Nikki Eggimann", "team": "West Central", "amount": 3, "rvp": "Not in Forecast", "stage": "Validation", "close": "2026-06-28", "competitor": "", "nextSteps": "", "clariScore": "86.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 80, "opp": "Atlantic Aviation MDR", "account": "Atlantic Aviation FBO Inc.", "rep": "Brett Wooten", "team": "TOLA-Mountain", "amount": 1, "rvp": "Not in Forecast", "stage": "Discovery", "close": "2026-06-30", "competitor": "", "nextSteps": "", "clariScore": "38.0", "meddpicc": "", "starred": 0, "momentum": "flat", "log": []}, {"id": 85, "opp": "CA / Scene / ECU + VC / $109K / TBD", "account": "Scene+", "rep": "Chris O'Neill", "team": "Canada", "amount": 107677, "rvp": "In Forecast", "stage": "Negotiation", "close": "2026-05-31", "competitor": "Tenable", "nextSteps": "May 22, 2026  won tech rec + approved by president.  msa red-lining and sig for May 29th execution", "clariScore": "84.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 86, "opp": "NN | QC | Groupe ADF | MTC Ult", "account": "Groupe ADF Inc", "rep": "Maxime Patou", "team": "Canada", "amount": 100406, "rvp": "Not in Forecast", "stage": "Proposal", "close": "2026-06-30", "competitor": "", "nextSteps": "May 19 : Demo done. Third party Vooban involved. Need to be addressed properly. Decision in June and deployment during t", "clariScore": "49.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 87, "opp": "ON | Napoleon | MTC adv 1K | 1Order", "account": "Napoleon Products", "rep": "Chris O'Neill", "team": "Canada", "amount": 83119, "rvp": "Bridge to Forecast", "stage": "Negotiation", "close": "2026-06-30", "competitor": "eSentire", "nextSteps": "May 22, 2026 waiting on tech rec and confirmation moving forward with us versus esentire.  Renewal date of incumbent mig", "clariScore": "76.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 88, "opp": "Amendment for contract #00020206", "account": "DIRTT", "rep": "Toby Ketchum", "team": "Canada", "amount": 79452, "rvp": "Bridge to Forecast", "stage": "Validation", "close": "2026-06-30", "competitor": "", "nextSteps": "5/26: Presenting new quote to Brad 5/27", "clariScore": "64.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 89, "opp": "ON | HCDSB | MTC 1K assets | 78K | CDW DR", "account": "Halton Catholic District School Board", "rep": "Chris O'Neill", "team": "Canada", "amount": 77959, "rvp": "In Forecast", "stage": "Negotiation", "close": "2026-05-29", "competitor": "Arctic Wolf", "nextSteps": "May 22, 2026 PO incoming, Need confirmation MSA ready for signature from Mike", "clariScore": "91.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 90, "opp": "ON | WideOrbit | MTC & ECU Upg | 2730 assets | Direct | $76k", "account": "WideOrbit, Inc.", "rep": "Jeff Pellizzari", "team": "Canada", "amount": 75609, "rvp": "Bridge to Forecast", "stage": "Validation", "close": "2026-06-26", "competitor": "Axonius", "nextSteps": "Apr 27 - a couple of Axonious use case that require some reframing within SC by Aaron, and some Jira ticket creation aut", "clariScore": "73.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 91, "opp": "ON | Tennis Canada | MDR | RFP", "account": "Tennis Canada", "rep": "Toby Ketchum", "team": "Canada", "amount": 49904, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "", "nextSteps": "5/18: Tennis Canada team still reviewing RFP submissions- Should be an end of month decision- following back up with Ger", "clariScore": "29.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 92, "opp": "ON | MDA Ltd | IAS 50 apps | CDW | $47k", "account": "MDA Ltd (MacDonald Dettwiler)", "rep": "Jeff Pellizzari", "team": "Canada", "amount": 47250, "rvp": "Not in Forecast", "stage": "Discovery", "close": "2026-06-25", "competitor": "", "nextSteps": "Apr 28 - completed overview session of IAS. Bill to get back to us with next steps.", "clariScore": "28.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 93, "opp": "Amendment for contract #00053403", "account": "Transcontinental Inc", "rep": "Maxime Patou", "team": "Canada", "amount": 43851, "rvp": "Bridge to Forecast", "stage": "Validation", "close": "2026-06-28", "competitor": "", "nextSteps": "May 11 : PoC will start May 18th until end of May.", "clariScore": "74.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 94, "opp": "QC | Dollarama | Exposure Command - Adv or Ult", "account": "Dollarama L.P.", "rep": "Maxime Patou", "team": "Canada", "amount": 41820, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "Wiz", "nextSteps": "May 1 : A new VM analyst will be on board soon. We will work with him + Sami for the PoC. Next meeting during week of Ma", "clariScore": "30.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 95, "opp": "Amendment for contract #00046606", "account": "RATESDOTCA Group Ltd.", "rep": "Toby Ketchum", "team": "Canada", "amount": 40251, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "", "nextSteps": "5/26: Mike OOO until week of june 8th. Call scheduled 6/10", "clariScore": "34.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 96, "opp": "AB | SUBNET Solutions | MTC Ult upgrade | $40k", "account": "SUBNET Solutions Inc.", "rep": "Tim Dlugolecki", "team": "Canada", "amount": 40000, "rvp": "Bridge to Forecast", "stage": "Validation", "close": "2026-06-29", "competitor": "", "nextSteps": "5/20 reconnecting on 6/8 as kelly will have met with president and CTO to understand what total budget they have", "clariScore": "67.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 97, "opp": "NN | ON | National Gallery of Canada | Vector Command", "account": "National Gallery of Canada", "rep": "Maxime Patou", "team": "Canada", "amount": 29202, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "", "nextSteps": "May 8 : Meeting done with Joe. Questionnaire to build SoW and then another meeting to finalize before budget.", "clariScore": "44.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 98, "opp": "AB | Badger Daylighting | MTC Ult Upgrade + SC | CDW | $28k", "account": "Badger Daylighting Ltd", "rep": "Tim Dlugolecki", "team": "Canada", "amount": 27786, "rvp": "In Forecast", "stage": "Negotiation", "close": "2026-05-31", "competitor": "", "nextSteps": "5/21 qualys out. deciding between upgrading to mtc ult & upgrade w/ addons (1 year & 3-year). renewal mid june, but they", "clariScore": "86.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 99, "opp": "ON | CarltonOne | EC Adv x1300 | $24k", "account": "CarltonOne Engagement", "rep": "Tim Dlugolecki", "team": "Canada", "amount": 24101, "rvp": "In Forecast", "stage": "Negotiation", "close": "2026-06-26", "competitor": "", "nextSteps": "5/21 has updated quote. their finance asked for discounts, we pushed back, waiting on response. also working w/ support ", "clariScore": "83.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 100, "opp": "BC | Safe Software | MTC Ult add-on | Direct | $19k", "account": "Safe Software", "rep": "Tim Dlugolecki", "team": "Canada", "amount": 19250, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-26", "competitor": "", "nextSteps": "5/21 confirmed they need to right size, trying to schedule call to discuss", "clariScore": "34.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 101, "opp": "ECE Renewal Upsell - $31k", "account": "Aviva Canada Inc.", "rep": "Chris O'Neill", "team": "Canada", "amount": 17000, "rvp": "Bridge to Forecast", "stage": "Negotiation", "close": "2026-06-12", "competitor": "", "nextSteps": "May 22, 2026  quote sent with May 29 expiration. upside to 31k if go withhosted console", "clariScore": "79.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 102, "opp": "AB | The Mustard Seed | ECE | $10k", "account": "The Mustard Seed", "rep": "Tim Dlugolecki", "team": "Canada", "amount": 9579, "rvp": "Bridge to Forecast", "stage": "Negotiation", "close": "2026-05-29", "competitor": "Tenable", "nextSteps": "5/21 provided quote. waiting to confirm if this is within budget from CFO. expects to know by 5/27. discounts are tied t", "clariScore": "77.0", "starred": 1, "momentum": "flat", "log": []}, {"id": 103, "opp": "ON | FSRA | MDR Add-on at Renewal | ipss | $9k", "account": "Financial Services Regulatory Authority of Ontario (FSRA)", "rep": "Tim Dlugolecki", "team": "Canada", "amount": 9236, "rvp": "Not in Forecast", "stage": "Positioning", "close": "2026-06-30", "competitor": "", "nextSteps": "5/21 need to provide updated asset count quote to partners. tracking w/ 6/30 renewal, and confirmed no concerns getting ", "clariScore": "34.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 104, "opp": "CA | Caseware | IAS | AppDirect", "account": "CaseWare International", "rep": "Toby Ketchum", "team": "Canada", "amount": 7875, "rvp": "Bridge to Forecast", "stage": "Proposal", "close": "2026-06-26", "competitor": "", "nextSteps": "5/26: Hasnain OOO until week of June 2nd- call scheduled 6/4", "clariScore": "35.0", "starred": 0, "momentum": "flat", "log": []}, {"id": 105, "opp": "ON | Neural/Volaris/Constellation | IVM Expansion 175 assets | Di", "account": "Neural Technologies", "rep": "Jeff Pellizzari", "team": "Canada", "amount": 1006, "rvp": "Not in Forecast", "stage": "Proposal", "close": "2026-06-30", "competitor": "", "nextSteps": "Apr 24 - no update yet, and old quote expired, so sent a new one.", "clariScore": "30.0", "starred": 0, "momentum": "flat", "log": []}];
+
+let sortField="wtd", sortAsc=false;
+
+function pipelineData(team){
+  const d=ALL_DEALS.filter(x=>x.team===team);
+  const inf=d.filter(x=>x.rvp==="In Forecast").reduce((s,x)=>s+wt(x),0);
+  const btf=d.filter(x=>x.rvp==="Bridge to Forecast").reduce((s,x)=>s+wt(x),0);
+  const nif=d.filter(x=>x.rvp==="Not in Forecast").reduce((s,x)=>s+wt(x),0);
+  return {commit:inf,best:btf,upside:nif};
+}
+
+function teamTotal(team){
+  const {commit,best,upside}=pipelineData(team);
+  return (CLOSED_WON[team]||0)+commit+best+upside;
+}
+
+function buildTopMetrics(){
+  const allTotal=TEAMS.reduce((s,t)=>s+teamTotal(t),0);
+  const allQuota=TEAMS.reduce((s,t)=>s+QUOTA[t],0);
+  const allClosed=TEAMS.reduce((s,t)=>s+(CLOSED_WON[t]||0),0);
+  const allCommit=TEAMS.reduce((s,t)=>s+pipelineData(t).commit,0);
+  const allGap=allTotal-allQuota;
+  const el=document.getElementById("topMetrics");
+  el.innerHTML=`
+    <div class="fmet"><div class="fmet-label">Total weighted</div><div class="fmet-val g">${fmtK(allTotal)}</div><div class="fmet-sub">all 4 teams combined</div></div>
+    <div class="fmet"><div class="fmet-label">Closed won</div><div class="fmet-val">${fmtK(allClosed)}</div><div class="fmet-sub">booked in Q2 to date</div></div>
+    <div class="fmet"><div class="fmet-label">Commit pipeline</div><div class="fmet-val">${fmtK(allCommit)}</div><div class="fmet-sub">90–100% probability</div></div>
+    <div class="fmet"><div class="fmet-label">Total vs quota</div><div class="fmet-val ${allGap>=0?"g":"a"}">${allGap>=0?"+":""}${fmtK(allGap)}</div><div class="fmet-sub">vs ${fmtK(allQuota)} total quota</div></div>
+  `;
+}
+
+function buildTeamCards(){
+  const el=document.getElementById("teamCards");
+  el.innerHTML="";
+  TEAMS.forEach(team=>{
+    const closed=CLOSED_WON[team]||0;
+    const {commit,best,upside}=pipelineData(team);
+    const total=closed+commit+best+upside;
+    const quota=QUOTA[team];
+    const gap=total-quota;
+    const tot=total||1;
+    const pct=Math.min(Math.round(total/quota*100),150);
+    const gapCls=gap>=0?"gap-pos":gap>-200000?"gap-watch":"gap-neg";
+    const statusTxt=gap>=0?"on track":gap>-200000?"watch":"at risk";
+    const statusCls=gap>=0?"status-on":gap>-200000?"status-watch":"status-risk";
+    el.innerHTML+=`<div class="tcard">
+      <div class="tcard-top">
+        <div class="tcard-name"><span class="tdot" style="background:${TEAM_COLORS[team]}"></span><span class="tcard-label">${team}</span></div>
+        <span class="tcard-status ${statusCls}">${statusTxt}</span>
+      </div>
+      <div class="tcard-total">${fmtK(total)}</div>
+      <div class="tcard-quota">${pct}% · quota ${fmtK(quota)}</div>
+      <div class="stack-bar">
+        <div class="stack-seg" style="width:${Math.round(closed/tot*100)}%;background:#1a5c38"></div>
+        <div class="stack-seg" style="width:${Math.round(commit/tot*100)}%;background:#2dd87a"></div>
+        <div class="stack-seg" style="width:${Math.round(best/tot*100)}%;background:#4d9ef5"></div>
+        <div class="stack-seg" style="flex:1;background:#f5a623"></div>
+      </div>
+      <div class="stack-legend">
+        <div class="leg"><span class="leg-sq" style="background:#1a5c38"></span>Closed ${fmtK(closed)}</div>
+        <div class="leg"><span class="leg-sq" style="background:#2dd87a"></span>In Forecast ${fmtK(commit)}</div>
+        <div class="leg"><span class="leg-sq" style="background:#4d9ef5"></span>Bridge ${fmtK(best)}</div>
+        <div class="leg"><span class="leg-sq" style="background:#f5a623"></span>Not in Forecast ${fmtK(upside)}</div>
+      </div>
+      <div class="tcard-footer">
+        <span class="coverage-label">${pct}% quota coverage</span>
+        <span class="gap-val ${gapCls}">${gap>=0?"+":""}${fmtK(gap)}</span>
+      </div>
+    </div>`;
+  });
+}
+
+function buildChart(){
+  const labels=TEAMS.map(t=>t.replace("TOLA-Mountain","TOLA-Mtn"));
+  new Chart(document.getElementById("stackChart"),{
+    type:"bar",
+    data:{labels,datasets:[
+      {label:"Closed won",data:TEAMS.map(t=>CLOSED_WON[t]||0),backgroundColor:"#1a5c38",stack:"a"},
+      {label:"In Forecast (90%)",data:TEAMS.map(t=>pipelineData(t).commit),backgroundColor:"#2dd87a",stack:"a"},
+      {label:"Bridge to forecast (60–70%)",data:TEAMS.map(t=>pipelineData(t).best),backgroundColor:"#4d9ef5",stack:"a"},
+      {label:"Not in Forecast (30%)",data:TEAMS.map(t=>pipelineData(t).upside),backgroundColor:"#f5a623",stack:"a"},
+      {label:"Quota target",data:TEAMS.map(t=>QUOTA[t]),type:"line",borderColor:"#f04d4d",borderWidth:2,borderDash:[5,4],pointStyle:"crossRot",pointRadius:7,pointBorderColor:"#f04d4d",pointBorderWidth:2,fill:false,stack:"b",order:-1}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtK(ctx.raw)}`},backgroundColor:"#1e1e1e",borderColor:"rgba(255,255,255,.1)",borderWidth:0.5,titleColor:"#f0ede8",bodyColor:"#9a9690"}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:"#5c5955",font:{size:12,family:"DM Mono"}}},
+        y:{stacked:true,grid:{color:"rgba(255,255,255,.05)"},ticks:{color:"#5c5955",font:{size:11,family:"DM Mono"},callback:v=>fmtK(v)},border:{display:false},max:1800000}
+      }
+    }
+  });
+}
+
+function buildRiskCards(){
+  const el=document.getElementById("riskCards");
+  el.innerHTML="";
+  TEAMS.forEach(team=>{
+    const closed=CLOSED_WON[team]||0;
+    const {commit,best,upside}=pipelineData(team);
+    const total=closed+commit+best+upside;
+    const quota=QUOTA[team];
+    const gap=total-quota;
+    const remainingGap=Math.max(-gap,0);
+    const coverPct=Math.min(Math.round(total/quota*100),100);
+    const fillColor=gap>=0?"#2dd87a":gap>-200000?"#f5a623":"#f04d4d";
+    const bannerCls=gap>=0?"gb-green":gap>-200000?"gb-amber":"gb-red";
+    const icon=gap>=0?"✓":"⚠";
+    const bannerTxt=gap>=0?`${fmtK(gap)} cushion after ${fmtK(closed)} closed`:`${fmtK(remainingGap)} still needed · ${fmtK(closed)} already closed`;
+
+    const risky=ALL_DEALS
+      .filter(d=>d.team===team&&["Bridge to Forecast","Not in Forecast"].includes(d.rvp)&&d.close)
+      .map(d=>{const dl=Math.round((new Date(d.close)-TODAY)/86400000);return {...d,dl,risk:dl<=7?"high":dl<=21?"medium":"low",wtdVal:wt(d)};})
+      .sort((a,b)=>{const o={high:0,medium:1,low:2};return o[a.risk]!==o[b.risk]?o[a.risk]-o[b.risk]:b.wtdVal-a.wtdVal;})
+      .slice(0,6);
+
+    let html=`<div class="risk-card">
+      <div class="risk-card-hdr">
+        <div class="risk-title"><span class="tdot" style="background:${TEAM_COLORS[team]}"></span>${team}</div>
+        <span class="risk-coverage">${fmtK(total)} / ${fmtK(quota)}</span>
+      </div>
+      <div class="coverage-track"><div class="coverage-fill" style="width:${coverPct}%;background:${fillColor}"></div></div>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin:4px 0 10px">${coverPct}% coverage incl. ${fmtK(closed)} closed</div>
+      <div class="gap-banner ${bannerCls}"><span>${icon}</span>${bannerTxt}</div>
+      <div class="risk-list-label">Must-convert deals</div>`;
+    risky.forEach(d=>{
+      const acc=d.account.length>26?d.account.slice(0,25)+"…":d.account;
+      const lbl=d.risk==="high"?"this week":`${d.dl}d left`;
+      html+=`<div class="risk-item">
+        <div>
+          <div class="ri-name">${acc}${STARRED.has(d.account)?" ⭐":""}</div>
+          <div class="ri-rep">${d.rep.split(" ")[0]} · ${d.rvp}</div>
+        </div>
+        <div class="ri-right">
+          <div class="ri-amt">${fmtK(d.wtdVal)}</div>
+          <span class="ri-badge ${d.risk==="high"?"rb-urgent":"rb-soon"}">${lbl}</span>
+        </div>
+      </div>`;
+    });
+    html+="</div>";
+    el.innerHTML+=html;
+  });
+}
+
+function renderPipeline(){
+  const tf=document.getElementById("pfTeam").value;
+  const cf=document.getElementById("pfCat").value;
+  const sf=document.getElementById("pfStage").value;
+  const srch=document.getElementById("pfSearch").value.toLowerCase();
+  let list=ALL_DEALS.filter(d=>d.cat!=="Closed Won"&&d.cat!=="Closed Lost");
+  if(tf!=="all")list=list.filter(d=>d.team===tf);
+  if(cf!=="all")list=list.filter(d=>d.rvp===cf);
+  if(sf!=="all")list=list.filter(d=>d.stage===sf);
+  if(srch)list=list.filter(d=>d.account.toLowerCase().includes(srch)||d.rep.toLowerCase().includes(srch));
+  list.sort((a,b)=>{
+    const va=sortField==="wtd"?wt(a):sortField==="amount"?a.amount:sortField==="rep"?a.rep:(a[sortField]||"");
+    const vb=sortField==="wtd"?wt(b):sortField==="amount"?b.amount:sortField==="rep"?b.rep:(b[sortField]||"");
+    return typeof va==="number"?(sortAsc?va-vb:vb-va):(sortAsc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va)));
+  });
+  const catBadge=c=>{const m={"In Forecast":"cat-commit","Bridge to Forecast":"cat-best","Not in Forecast":"cat-upside"};return `<span class="cat-badge ${m[c]||"cat-pipeline"}">${c}</span>`;};
+  const teamDot=t=>`<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${TEAM_COLORS[t]||"#888"};margin-right:4px;vertical-align:middle"></span>${t.replace("TOLA-Mountain","TOLA")}`;
+  const tbody=document.getElementById("pipelineBody");
+  tbody.innerHTML=list.map(d=>{
+    const w=wt(d);const s=STARRED.has(d.account);
+    const sc=d.clariScore?`<span class="clari-score ${clariColor(d.clariScore)}">${d.clariScore}</span>`:"—";
+    const cd=d.close?d.close.slice(5).replace("-","/"): "—";
+    const wColor=w>75000?"var(--green)":w>30000?"var(--amber)":"var(--text2)";
+    return `<tr>
+      <td style="max-width:200px" title="${d.account}">${s?"⭐ ":""}${d.account}</td>
+      <td style="max-width:120px;color:var(--text2)">${d.rep.split(" ")[0]} ${d.rep.split(" ").slice(-1)[0][0]}.</td>
+      <td class="amt">${fmt(d.amount)}</td>
+      <td class="wtd-amt" style="color:${wColor}">${fmt(w)}</td>
+      <td>${catBadge(d.rvp)}</td>
+      <td style="color:var(--text3);font-size:11px">${d.stage}</td>
+      <td style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">${cd}</td>
+      <td>${sc}</td>
+      <td style="max-width:130px">${teamDot(d.team)}</td>
+    </tr>`;
+  }).join("");
+  const raw=list.reduce((s,d)=>s+d.amount,0);
+  const wtdTotal=list.reduce((s,d)=>s+wt(d),0);
+  document.getElementById("pipelineFooter").textContent=`${list.length} deals · Raw: ${fmt(raw)} · Weighted: ${fmt(wtdTotal)}`;
+}
+
+function setSort(f){if(sortField===f)sortAsc=!sortAsc;else{sortField=f;sortAsc=f==="account";}renderPipeline();}
+
+function showSection(name, btn){
+  document.querySelectorAll(".page-section").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+  document.getElementById("sec-"+name).classList.add("active");
+  btn.classList.add("active");
+  if(name==="pipeline")renderPipeline();
+  if(name==="leaderboard"){buildLbSummary();renderLeaderboard();}
+  if(name==="overview"){
+    buildManagerProgress("mgr-wc","West Central","Nick Rossi","#4d9ef5");
+    buildManagerProgress("mgr-wco","West Coastal","Katrina Proule","#a78bfa");
+    buildManagerProgress("mgr-tola","TOLA-Mountain","Cannon Joyce","#2dd87a");
+    buildManagerProgress("mgr-ca","Canada","Rich Joyal","#f5a623");
+  }
+  if(name==="bob"){buildBob();buildNewTrackingDeals("bobNewDeals");}
+  if(name==="jacob")buildJacob();
+
+}
+
+function filterTeam(team, btn){
+  showSection("pipeline",btn);
+  document.getElementById("pfTeam").value=team;
+  renderPipeline();
+}
+
+buildTopMetrics();
+buildTeamCards();
+buildChart();
+buildRiskCards();
+renderPipeline();
+// Build manager rings on overview load
+buildManagerProgress("mgr-wc","West Central","Nick Rossi","#4d9ef5");
+buildManagerProgress("mgr-wco","West Coastal","Katrina Proule","#a78bfa");
+buildManagerProgress("mgr-tola","TOLA-Mountain","Cannon Joyce","#2dd87a");
+buildManagerProgress("mgr-ca","Canada","Rich Joyal","#f5a623");
+
+function buildBob(){
+  const RVP_W2={"In Forecast":0.90,"Bridge to Forecast":0.50,"Not in Forecast":0.30};
+  const CLOSED2={"West Central":440073,"West Coastal":345811,"TOLA-Mountain":162663,"Canada":120000};
+  const BOB_QUOTA=4600000;
+  const wt2=d=>Math.round(d.amount*Math.min((RVP_W2[d.rvp]||0)+(d.starred?0.10:0),1.0));
+  const totalClosed=Object.values(CLOSED2).reduce((s,v)=>s+v,0);
+  const totalWtd=ALL_DEALS.reduce((s,d)=>s+wt2(d),0)+totalClosed;
+  const gap=totalWtd-BOB_QUOTA;
+
+  // Pipeline coverage this week vs prior (we only have current snapshot, so show totals)
+  const infDeals=ALL_DEALS.filter(d=>d.rvp==="In Forecast");
+  const btfDeals=ALL_DEALS.filter(d=>d.rvp==="Bridge to Forecast");
+  const nifDeals=ALL_DEALS.filter(d=>d.rvp==="Not in Forecast");
+  const infWtd=infDeals.reduce((s,d)=>s+wt2(d),0);
+  const btfWtd=btfDeals.reduce((s,d)=>s+wt2(d),0);
+  const nifWtd=nifDeals.reduce((s,d)=>s+wt2(d),0);
+  const totalPipeRaw=ALL_DEALS.reduce((s,d)=>s+d.amount,0);
+
+  // Critical deals = In Forecast + Bridge, sorted by weighted value
+  const critical=[...infDeals,...btfDeals].sort((a,b)=>b.amount-a.amount).slice(0,12);
+
+  // Gap-closing = Not in Forecast, sorted by raw (if they close full value)
+  const gapDeals=nifDeals.sort((a,b)=>b.amount-a.amount).slice(0,10);
+
+  const teamBadge2=t=>{const m={"West Central":"twc","West Coastal":"twco","TOLA-Mountain":"ttola","Canada":""},s={"West Central":"W.Cen","West Coastal":"W.Coa","TOLA-Mountain":"TOLA","Canada":"CA"};return `<span class="team-pip ${m[t]||""}" style="font-size:10px">${s[t]||t}</span>`;};
+  const wtdColor=v=>v>=75000?"wtd-high":v>=30000?"wtd-mid":"wtd-low";
+
+  document.getElementById("bobContent").innerHTML=`
+    <div class="two-col">
+      <div class="insight-card">
+        <div class="insight-card-title"><span class="ic-dot" style="background:#2dd87a"></span>Qualified pipeline coverage</div>
+        <div class="insight-summary">Total weighted forecast across all 4 teams is <strong style="color:var(--green)">${fmtK(totalWtd)}</strong> vs your $4.6M quota — a <strong style="color:var(--green)">${fmtK(gap)} cushion</strong>. Closed won to date: <strong>${fmtK(totalClosed)}</strong>. Total raw pipeline: <strong>${fmtK(totalPipeRaw)}</strong>.</div>
+        <table class="insight-table">
+          <thead><tr><th>Category</th><th>Deals</th><th>Raw ARR</th><th>Weighted</th></tr></thead>
+          <tbody>
+            <tr><td>In Forecast (90%)</td><td>${infDeals.length}</td><td class="mono">${fmtK(infDeals.reduce((s,d)=>s+d.amount,0))}</td><td class="mono ${wtdColor(infWtd)}">${fmtK(infWtd)}</td></tr>
+            <tr><td>Bridge to Forecast (50%)</td><td>${btfDeals.length}</td><td class="mono">${fmtK(btfDeals.reduce((s,d)=>s+d.amount,0))}</td><td class="mono ${wtdColor(btfWtd)}">${fmtK(btfWtd)}</td></tr>
+            <tr><td>Not in Forecast (30%)</td><td>${nifDeals.length}</td><td class="mono">${fmtK(nifDeals.reduce((s,d)=>s+d.amount,0))}</td><td class="mono">${fmtK(nifWtd)}</td></tr>
+            <tr style="border-top:.5px solid var(--border2)"><td><strong>Closed won</strong></td><td>—</td><td class="mono">${fmtK(totalClosed)}</td><td class="mono" style="color:var(--green)">${fmtK(totalClosed)}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="insight-card">
+        <div class="insight-card-title"><span class="ic-dot" style="background:#f04d4d"></span>Critical deals to win to hit forecast</div>
+        <div class="insight-summary">Top In Forecast + Bridge deals by weighted value. These must close to protect the number.</div>
+        <table class="insight-table">
+          <thead><tr><th style="width:40%">Account</th><th>Team</th><th>Category</th><th>Raw ARR</th></tr></thead>
+          <tbody>${critical.map(d=>`<tr>
+            <td title="${d.account}">${d.account.length>24?d.account.slice(0,23)+"…":d.account}${d.starred?" ⭐":""}</td>
+            <td>${teamBadge2(d.team)}</td>
+            <td style="font-size:10px;color:var(--text3)">${d.rvp==="In Forecast"?"In FC":"Bridge"}</td>
+            <td class="mono ${wtdColor(d.amount)}">${fmtK(d.amount)}</td>
+          </tr>`).join("")}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-card-title"><span class="ic-dot" style="background:#f5a623"></span>Deals that could help close the gap if won</div>
+      <div class="insight-summary">Currently <em>Not in Forecast</em> — at 30% probability weighted. If any of these convert to In Forecast or close outright, they materially improve the number. Top 10 by raw ARR.</div>
+      <table class="insight-table">
+        <thead><tr><th style="width:32%">Account</th><th>Rep</th><th>Team</th><th>Raw ARR</th><th>Wtd @ 30%</th><th>Upside if won</th><th>Close</th></tr></thead>
+        <tbody>${gapDeals.map(d=>{const uplift=d.amount-wt2(d);return`<tr>
+          <td title="${d.account}">${d.account.length>26?d.account.slice(0,25)+"…":d.account}${d.starred?" ⭐":""}</td>
+          <td style="color:var(--text2)">${d.rep.split(" ")[0]} ${d.rep.split(" ").slice(-1)[0][0]}.</td>
+          <td>${teamBadge2(d.team)}</td>
+          <td class="mono">${fmtK(d.amount)}</td>
+          <td class="mono" style="color:var(--text3)">${fmtK(wt2(d))}</td>
+          <td class="mono" style="color:var(--green)">+${fmtK(uplift)}</td>
+          <td class="mono" style="color:var(--text3)">${d.close?d.close.slice(5).replace("-","/"):"—"}</td>
+        </tr>`}).join("")}</tbody>
+      </table>
+    </div>`;
+}
+
+function buildJacob(){
+  const RVP_W2={"In Forecast":0.90,"Bridge to Forecast":0.50,"Not in Forecast":0.30};
+  const wt2=d=>Math.round(d.amount*Math.min((RVP_W2[d.rvp]||0)+(d.starred?0.10:0),1.0));
+  const TODAY2=new Date("2026-05-25");
+  const teamBadge2=t=>{const m={"West Central":"twc","West Coastal":"twco","TOLA-Mountain":"ttola","Canada":""},s={"West Central":"W.Cen","West Coastal":"W.Coa","TOLA-Mountain":"TOLA","Canada":"CA"};return `<span class="team-pip ${m[t]||""}" style="font-size:10px">${s[t]||t}</span>`;};
+  const wtdColor=v=>v>=75000?"wtd-high":v>=30000?"wtd-mid":"wtd-low";
+
+  // Starred Bridge deals
+  const starredBridge=ALL_DEALS.filter(d=>d.rvp==="Bridge to Forecast"&&d.starred).sort((a,b)=>wt2(b)-wt2(a));
+  const starredBridgeWtd=starredBridge.reduce((s,d)=>s+wt2(d),0);
+
+  // Q3 pull-forward candidates: Not in Forecast closing late June (most likely originated as Q3 deals brought forward)
+  const pullForward=ALL_DEALS.filter(d=>d.rvp==="Not in Forecast"&&d.close>="2026-06-15").sort((a,b)=>b.amount-a.amount).slice(0,10);
+
+  // Biggest risks: Bridge or Not in Forecast closing within 14 days
+  const risks=ALL_DEALS
+    .filter(d=>["Bridge to Forecast","Not in Forecast"].includes(d.rvp)&&d.close)
+    .map(d=>{const dl=Math.round((new Date(d.close)-TODAY2)/86400000);return{...d,dl,wtdVal:wt2(d)};})
+    .filter(d=>d.dl<=14)
+    .sort((a,b)=>a.dl!==b.dl?a.dl-b.dl:b.wtdVal-a.wtdVal);
+
+  document.getElementById("jacobContent").innerHTML=`
+    <div class="insight-card">
+      <div class="insight-card-title"><span class="ic-dot" style="background:#2dd87a"></span>Starred Bridge to Forecast deals I expect to close &nbsp;<span style="font-size:11px;color:var(--text3)">${starredBridge.length} deals · ${fmtK(starredBridgeWtd)} weighted</span></div>
+      <div class="insight-summary">These are the Bridge deals you've starred — your highest-conviction pipeline. Combined weighted value: <strong style="color:var(--green)">${fmtK(starredBridgeWtd)}</strong>. If all close at full value, that's <strong>${fmtK(starredBridge.reduce((s,d)=>s+d.amount,0))}</strong> raw ARR.</div>
+      <table class="insight-table">
+        <thead><tr><th style="width:30%">Account</th><th>Rep</th><th>Team</th><th>Raw ARR</th><th>Wtd ARR</th><th>Close</th></tr></thead>
+        <tbody>${starredBridge.map(d=>`<tr>
+          <td title="${d.account}">${d.account.length>26?d.account.slice(0,25)+"…":d.account} ⭐</td>
+          <td style="color:var(--text2)">${d.rep.split(" ")[0]} ${d.rep.split(" ").slice(-1)[0][0]}.</td>
+          <td>${teamBadge2(d.team)}</td>
+          <td class="mono">${fmtK(d.amount)}</td>
+          <td class="mono ${wtdColor(d.amount)}">${fmtK(d.amount)}</td>
+          <td class="mono" style="color:var(--text3)">${d.close?d.close.slice(5).replace("-","/"):"—"}</td>
+        </tr>`).join("")}</tbody>
+      </table>
+    </div>
+    <div class="two-col">
+      <div class="insight-card">
+        <div class="insight-card-title"><span class="ic-dot" style="background:#4d9ef5"></span>Deals to potentially pull forward from Q3</div>
+        <div class="insight-summary">Not in Forecast with late-June close dates — deals that may have been Q3 originally. If momentum accelerates, these could contribute to Q2.</div>
+        <table class="insight-table">
+          <thead><tr><th style="width:38%">Account</th><th>Rep</th><th>Team</th><th>Raw ARR</th><th>Close</th></tr></thead>
+          <tbody>${pullForward.map(d=>`<tr>
+            <td title="${d.account}">${d.account.length>24?d.account.slice(0,23)+"…":d.account}${d.starred?" ⭐":""}</td>
+            <td style="color:var(--text2)">${d.rep.split(" ")[0]} ${d.rep.split(" ").slice(-1)[0][0]}.</td>
+            <td>${teamBadge2(d.team)}</td>
+            <td class="mono">${fmtK(d.amount)}</td>
+            <td class="mono" style="color:var(--text3)">${d.close?d.close.slice(5).replace("-","/"):"—"}</td>
+          </tr>`).join("")}</tbody>
+        </table>
+      </div>
+      <div class="insight-card">
+        <div class="insight-card-title"><span class="ic-dot" style="background:#f04d4d"></span>Biggest risks to forecast — closing within 14 days</div>
+        <div class="insight-summary">Bridge or Not in Forecast deals with imminent close dates that haven't yet committed. These need attention this week.</div>
+        <table class="insight-table">
+          <thead><tr><th style="width:36%">Account</th><th>Team</th><th>Raw ARR</th><th>Due</th></tr></thead>
+          <tbody>${risks.map(d=>`<tr>
+            <td title="${d.account}">${d.account.length>22?d.account.slice(0,21)+"…":d.account}${d.starred?" ⭐":""}</td>
+            <td>${teamBadge2(d.team)}</td>
+            <td class="mono">${fmtK(d.amount)}</td>
+            <td><span class="${d.dl<=5?"risk-urgent":"risk-soon"}">${d.dl<=0?"today":d.dl+"d"}</span></td>
+          </tr>`).join("")}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+
+// ── Manager progress visuals ─────────────────────────────────────────────────
+function buildManagerProgress(containerId, team, managerName, teamColor) {
+  const RVP_W2={"In Forecast":0.90,"Bridge to Forecast":0.50,"Not in Forecast":0.30};
+  const CLOSED2={"West Central":440073,"West Coastal":345811,"TOLA-Mountain":162663,"Canada":120000};
+  const QUOTA2={"West Central":1194952,"West Coastal":1194952,"TOLA-Mountain":1365554,"Canada":1007317};
+  const wt2=d=>Math.round(d.amount*Math.min((RVP_W2[d.rvp]||0)+(d.starred?0.10:0),1.0));
+
+  const td = ALL_DEALS.filter(d=>d.team===team);
+  const closed = CLOSED2[team];
+  const infW  = td.filter(d=>d.rvp==="In Forecast").reduce((s,d)=>s+wt2(d),0);
+  const btfW  = td.filter(d=>d.rvp==="Bridge to Forecast").reduce((s,d)=>s+wt2(d),0);
+  const nifW  = td.filter(d=>d.rvp==="Not in Forecast").reduce((s,d)=>s+wt2(d),0);
+  const total = closed + infW + btfW + nifW;
+  const quota = QUOTA2[team];
+  const gap   = total - quota;
+  const pct   = Math.min(Math.round(total/quota*100), 150);
+  const gapColor = gap>=0 ? "var(--green)" : gap > -150000 ? "var(--amber)" : "var(--red)";
+
+  // SVG donut ring
+  const RADIUS = 44, CX = 52, CY = 52, STROKE = 8;
+  const CIRC = 2 * Math.PI * RADIUS;
+  const filledPct = Math.min(total/quota, 1);
+  const segments = [
+    { val: closed, color: "#1a5c38" },
+    { val: infW,   color: "#2dd87a" },
+    { val: btfW,   color: "#4d9ef5" },
+    { val: nifW,   color: "#f5a623" },
+  ];
+  let offset = 0;
+  const segPaths = segments.map(seg => {
+    const segPct = seg.val / quota;
+    const capped = Math.min(segPct, Math.max(0, 1 - offset));
+    const dash = capped * CIRC;
+    const path = `<circle cx="${CX}" cy="${CY}" r="${RADIUS}"
+      fill="none" stroke="${seg.color}" stroke-width="${STROKE}"
+      stroke-dasharray="${dash} ${CIRC - dash}"
+      stroke-dashoffset="${-offset * CIRC}"
+      transform="rotate(-90 ${CX} ${CY})"
+      style="transition:stroke-dasharray .5s ease"/>`;
+    offset += capped;
+    return path;
+  }).join('');
+
+  const quotaLine = filledPct >= 1 ? '' :
+    `<line x1="${CX + RADIUS * Math.cos((filledPct*2*Math.PI) - Math.PI/2)}"
+           y1="${CY + RADIUS * Math.sin((filledPct*2*Math.PI) - Math.PI/2)}"
+           x2="${CX + (RADIUS+6) * Math.cos((filledPct*2*Math.PI) - Math.PI/2)}"
+           y2="${CY + (RADIUS+6) * Math.sin((filledPct*2*Math.PI) - Math.PI/2)}"
+           stroke="var(--red)" stroke-width="2" stroke-dasharray="2 2"/>`;
+
+  const tot = closed + infW + btfW + nifW || 1;
+  const stackSegs = [
+    {v:closed, c:"#1a5c38"}, {v:infW, c:"#2dd87a"},
+    {v:btfW, c:"#4d9ef5"}, {v:nifW, c:"#f5a623"}
+  ].map(s=>`<div class="stack-mini-seg" style="width:${Math.round(s.v/tot*100)}%;background:${s.c}"></div>`).join('');
+
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML = `
+    <div class="progress-ring-wrap">
+      <svg width="104" height="104" viewBox="0 0 104 104" role="img" aria-label="${managerName} quota progress: ${pct}%">
+        <circle cx="${CX}" cy="${CY}" r="${RADIUS}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="${STROKE}"/>
+        ${segPaths}
+        ${quotaLine}
+        <text x="${CX}" y="${CY-6}" text-anchor="middle" fill="var(--text)" font-family="DM Mono" font-size="14" font-weight="500">${pct}%</text>
+        <text x="${CX}" y="${CY+10}" text-anchor="middle" fill="var(--text3)" font-family="DM Sans" font-size="8">of quota</text>
+      </svg>
+      <div class="progress-ring-labels">
+        <div class="prl-name">${managerName}</div>
+        <div class="prl-total" style="color:${gapColor}">${fmtK(total)}</div>
+        <div class="prl-quota">quota ${fmtK(quota)}</div>
+        <div class="prl-gap" style="color:${gapColor}">${gap>=0?"+":""}${fmtK(gap)} ${gap>=0?"cushion":"shortfall"}</div>
+      </div>
+    </div>
+    <div class="stack-mini">${stackSegs}</div>
+    <div class="seg-labels">
+      <span class="seg-lbl"><span class="seg-sq" style="background:#1a5c38"></span>Closed ${fmtK(closed)}</span>
+      <span class="seg-lbl"><span class="seg-sq" style="background:#2dd87a"></span>In FC ${fmtK(infW)}</span>
+      <span class="seg-lbl"><span class="seg-sq" style="background:#4d9ef5"></span>Bridge ${fmtK(btfW)}</span>
+      <span class="seg-lbl"><span class="seg-sq" style="background:#f5a623"></span>NiF ${fmtK(nifW)}</span>
+    </div>`;
+}
+
+// ── New deals now tracking for Bob ──────────────────────────────────────────
+function buildNewTrackingDeals(containerId) {
+  const RVP_W2={"In Forecast":0.90,"Bridge to Forecast":0.50,"Not in Forecast":0.30};
+  const wt2=d=>Math.round(d.amount*Math.min((RVP_W2[d.rvp]||0)+(d.starred?0.10:0),1.0));
+  const teamBadge2=t=>{const m={"West Central":"twc","West Coastal":"twco","TOLA-Mountain":"ttola","Canada":""},s={"West Central":"W.Cen","West Coastal":"W.Coa","TOLA-Mountain":"TOLA","Canada":"CA"};return `<span class="team-pip ${m[t]||""}" style="font-size:10px">${s[t]||t}</span>`;};
+
+  // New to tracking = Not in Forecast deals that are starred OR Clari score >= 60
+  const newDeals = ALL_DEALS
+    .filter(d => d.rvp === "Not in Forecast" && (d.starred || (parseFloat(d.clariScore)||0) >= 60))
+    .sort((a,b) => b.amount - a.amount);
+
+  const totalRaw = newDeals.reduce((s,d)=>s+d.amount,0);
+  const totalWtd = newDeals.reduce((s,d)=>s+wt2(d),0);
+
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML = `
+    <div class="insight-summary">
+      ${newDeals.length} deals not previously In Forecast or Bridge that we are now tracking to close this quarter.
+      Combined raw ARR: <strong>${fmtK(totalRaw)}</strong> &nbsp;·&nbsp; weighted: <strong style="color:var(--amber)">${fmtK(totalWtd)}</strong>.
+      These represent upside that is not yet in the official forecast.
+    </div>
+    <table class="insight-table">
+      <thead><tr>
+        <th style="width:30%">Account</th>
+        <th>Rep</th>
+        <th>Team</th>
+        <th>Raw ARR</th>
+        <th>Clari</th>
+        <th>Stage</th>
+        <th>Close</th>
+      </tr></thead>
+      <tbody>${newDeals.map(d=>{
+        const cs = parseFloat(d.clariScore)||0;
+        const scCls = cs>=70?"cs-hi":"cs-md";
+        return `<tr>
+          <td title="${d.account}">${d.account.length>26?d.account.slice(0,25)+"…":d.account}${d.starred?" ⭐":""}</td>
+          <td style="color:var(--text2)">${d.rep.split(" ")[0]} ${d.rep.split(" ").slice(-1)[0][0]}.</td>
+          <td>${teamBadge2(d.team)}</td>
+          <td class="mono">${fmtK(d.amount)}</td>
+          <td>${cs?`<span class="nd-score ${scCls}">${Math.round(cs)}</span>`:"—"}</td>
+          <td style="font-size:11px;color:var(--text3)">${d.stage}</td>
+          <td class="mono" style="color:var(--text3)">${d.close?d.close.slice(5).replace("-","/"):"—"}</td>
+        </tr>`;
+      }).join("")}</tbody>
+    </table>`;
+}
+
+
+// ── AE LEADERBOARD DATA ──────────────────────────────────────────────────────
+const LB_DATA = [{"rep": "Melissa Jolley", "team": "TOLA-Mountain", "ytd": 6199, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 0.73, "mgr": "Cannon Joyce"}, {"rep": "Hayden Denton", "team": "TOLA-Mountain", "ytd": 25580, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 3.03, "mgr": "Cannon Joyce"}, {"rep": "Brett Wooten", "team": "TOLA-Mountain", "ytd": 96183, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 11.38, "mgr": "Cannon Joyce"}, {"rep": "Daniel Lantrip", "team": "TOLA-Mountain", "ytd": 243843, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 28.86, "mgr": "Cannon Joyce"}, {"rep": "Danny McInnis", "team": "TOLA-Mountain", "ytd": 203591, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 24.09, "mgr": "Cannon Joyce"}, {"rep": "David Sanchez", "team": "TOLA-Mountain", "ytd": 47301, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 5.6, "mgr": "Cannon Joyce"}, {"rep": "Spencer Canny", "team": "West Coastal", "ytd": 383148, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 45.34, "mgr": "Katrina Proule"}, {"rep": "Jeremy Castiglia", "team": "West Coastal", "ytd": 23151, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 2.74, "mgr": "Katrina Proule"}, {"rep": "Madison Murdick", "team": "West Coastal", "ytd": 70040, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 8.29, "mgr": "Katrina Proule"}, {"rep": "Tristan Shepard", "team": "West Coastal", "ytd": 165333, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 19.57, "mgr": "Katrina Proule"}, {"rep": "Jared Vargus", "team": "West Coastal", "ytd": 363628, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 43.03, "mgr": "Katrina Proule"}, {"rep": "Micah Cogan", "team": "West Central", "ytd": 176016, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 20.83, "mgr": "Nick Rossi"}, {"rep": "Kaitlyn Cargill", "team": "West Central", "ytd": 32565, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 3.85, "mgr": "Nick Rossi"}, {"rep": "Tyler Calderone", "team": "West Central", "ytd": 156818, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 18.56, "mgr": "Nick Rossi"}, {"rep": "Vanessa Ortega", "team": "West Central", "ytd": 483883, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 57.26, "mgr": "Nick Rossi"}, {"rep": "Brendan Sullivan", "team": "West Central", "ytd": 273056, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 31.21, "mgr": "Nick Rossi"}, {"rep": "Brian Connel", "team": "West Central", "ytd": 314533, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 35.95, "mgr": "Nick Rossi"}, {"rep": "Maxime Patou", "team": "Canada", "ytd": 101892, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 11.99, "mgr": "Richard Joyal"}, {"rep": "Tim Dlugolecki", "team": "Canada", "ytd": 149476, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 20.7, "mgr": "Richard Joyal"}, {"rep": "Toby Ketchum", "team": "Canada", "ytd": 95674, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 13.25, "mgr": "Richard Joyal"}, {"rep": "Jeff Pellizzari", "team": "Canada", "ytd": 352259, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 41.44, "mgr": "Richard Joyal"}, {"rep": "Chris O'Neill", "team": "Canada", "ytd": 169386, "q1": 0, "q2": 0, "land": 0, "expand": 0, "attainPct": 19.93, "mgr": "Richard Joyal"}];
+
+const TEAM_COLORS2={"West Central":"#4d9ef5","West Coastal":"#a78bfa","TOLA-Mountain":"#2dd87a","Canada":"#f5a623"};
+let lbSortField="ytd", lbSortAsc=false;
+
+function setLbSort(f){if(lbSortField===f)lbSortAsc=!lbSortAsc;else{lbSortField=f;lbSortAsc=false;}renderLeaderboard();}
+
+function buildLbSummary(){
+  const el=document.getElementById("lbSummary");
+  if(!el)return;
+  const teams=["West Central","West Coastal","TOLA-Mountain","Canada"];
+  el.innerHTML=teams.map(team=>{
+    const td=LB_DATA.filter(r=>r.team===team);
+    const total=td.reduce((s,r)=>s+r.ytd,0);
+    const q2=td.reduce((s,r)=>s+r.q2,0);
+    const reps=td.filter(r=>r.ytd>0).length;
+    return `<div class="mgr-card">
+      <div class="mgr-card-hdr"><span class="mgr-dot" style="background:${TEAM_COLORS2[team]}"></span><span class="mgr-title">${team}</span></div>
+      <div style="font-family:var(--font-display);font-size:24px;font-weight:500;color:var(--text)">${fmtK(total)}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">YTD · Q2: ${fmtK(q2)} · ${reps} reps</div>
+    </div>`;
+  }).join('');
+}
+
+function renderLeaderboard(){
+  const teamF=document.getElementById("lbTeam").value;
+  const sortF=document.getElementById("lbSort").value;
+  const srch=document.getElementById("lbSearch").value.toLowerCase();
+
+  let list=[...LB_DATA];
+  if(teamF!=="all")list=list.filter(r=>r.team===teamF);
+  if(srch)list=list.filter(r=>r.rep.toLowerCase().includes(srch));
+
+  // Sort
+  const sortKey=lbSortField!=="ytd"?lbSortField:sortF;
+  list.sort((a,b)=>{
+    let va=sortKey==="attain"?(a.attainPct!=null?a.attainPct:0):a[sortKey]||0;
+    let vb=sortKey==="attain"?(b.attainPct!=null?b.attainPct:0):b[sortKey]||0;
+    if(sortKey==="rep")return lbSortAsc?a.rep.localeCompare(b.rep):b.rep.localeCompare(a.rep);
+    return lbSortAsc?va-vb:vb-va;
+  });
+
+  const medals=["🥇","🥈","🥉"];
+  const tbody=document.getElementById("lbBody");
+  const totalYtd=list.reduce((s,r)=>s+r.ytd,0);
+  const totalQ2=list.reduce((s,r)=>s+r.q2,0);
+
+  tbody.innerHTML=list.map((r,i)=>{
+    const attain=r.attainPct!=null?r.attainPct:null;
+    const attainColor=attain===null?"var(--text3)":attain>=100?"var(--green)":attain>=75?"var(--amber)":"var(--red)";
+    const barW=attain!==null?Math.min(attain,100):0;
+    const barColor=attain===null?"#555":attain>=100?"#2dd87a":attain>=75?"#f5a623":"#f04d4d";
+    const medal=i<3?`<span class="rank-medal">${medals[i]}</span>`:
+                i<10?`<span style="font-family:var(--font-mono);font-size:11px;color:var(--text3);padding:0 3px">${i+1}</span>`:
+                `<span style="font-family:var(--font-mono);font-size:11px;color:var(--text3);padding:0 2px">${i+1}</span>`;
+    return `<tr>
+      <td>${medal}</td>
+      <td style="font-weight:500">${r.rep}</td>
+      <td><span class="lb-team-dot" style="background:${TEAM_COLORS2[r.team]}"></span><span style="font-size:11px;color:var(--text2)">${r.team.replace("TOLA-Mountain","TOLA")}</span></td>
+      <td class="mono" style="font-weight:500;color:var(--green)">${fmt(r.ytd)}</td>
+      <td style="font-size:11px;color:var(--text3)">${r.mgr||"—"}</td>
+      <td>
+        ${attain!==null?`<div style="display:flex;align-items:center;gap:8px">
+          <div class="attain-pct" style="color:${attainColor};min-width:44px">${attain.toFixed(1)}%</div>
+          <div style="flex:1"><div class="attain-bar" style="height:6px"><div class="attain-fill" style="width:${barW}%;background:${barColor}"></div></div></div>
+        </div>`
+        :`<div class="attain-na" style="font-size:10px;color:var(--text3)">not on plan</div>`}
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById("lbFoot").textContent=`${list.length} reps · Total ARR bookings YTD: ${fmt(totalYtd)}`;
+}
+
+</script>
+</body>
+</html>
